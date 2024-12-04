@@ -10,7 +10,7 @@ Create table T_Recette(
 REC_ID INT PRIMARY KEY,
 REC_Montant float,
 REC_DATE DATE,
-REC_Statut ENUM('en_attente','validee','rejetee'),
+REC_Statut ENUM('en_attente','validee','utilisee'),
 UTI_ID INT
 Constraint PK_UTI_ID FOREIGN KEY UTI_ID REFERENCES T_Utilisateur(UTI_ID)
 )
