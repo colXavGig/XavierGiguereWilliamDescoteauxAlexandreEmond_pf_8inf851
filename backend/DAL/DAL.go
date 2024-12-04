@@ -7,6 +7,7 @@ package DAL
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	_ "github.com/godror/godror"
@@ -24,11 +25,11 @@ type OracleDB struct {
 }
 
 type Receipt struct{
-	Id int `db:"REC_ID"`
-	Total float `db:"REC_MONTANT"`
-	DATE time.Time `db:"REC_DATE"`
-	Statut StatutReceipt  `db:"REC_Status"`
-	Utilisateur_ID int `db:"UTI_ID"`
+	Id int `db:"REC_ID" json:"ID"`
+	Total float `db:"REC_MONTANT" json:"total"`
+	DATE time.Time `db:"REC_DATE" json:"date"`
+	Statut StatutReceipt  `db:"REC_Status" json:"statut"`
+	Utilisateur_ID int `db:"UTI_ID" json:"utilisateurID"`
 }
 
 func NewOracleDB(connectionstring string) (*OracleDB,error) {
@@ -45,11 +46,16 @@ func NewOracleDB(connectionstring string) (*OracleDB,error) {
 //Receipt Action
 func (this *OracleDB)FetchAllReceipt() ([]Receipt,error) {
 	var recette_list []Receipt
-	
+	query := `
+		SELECT *
+		FROM T_Recette
+	`
 	rows,err := this.Query("Select * From T_Recette")
 	if err != nil {
+		log.Printf("Could not query the db. Error: %s",err.Error())
 		return nil, err
 	}
+	defer rows.Close()
 
 	recette_list = make([]Receipt,5)
 
