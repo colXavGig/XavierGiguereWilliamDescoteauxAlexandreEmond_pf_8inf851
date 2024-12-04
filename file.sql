@@ -47,7 +47,7 @@ WC_ID INT PRIMARY KEY,
 WC_NOM VARCHAR(75),
 )
 
-)Create table T_Douche(
+Create table T_Douche(
 DOU_ID INT PRIMARY KEY,
 DOU_NOM VARCHAR(75),
 )
