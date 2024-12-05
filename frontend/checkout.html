@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - Rental Management</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Navbar -->
+  <div id="navbar"></div>
+
+  <!-- Checkout Content -->
+  <div class="container">
+    <h1>Checkout</h1>
+
+    <!-- Selected Items -->
+    <section>
+      <h2>Your Selections</h2>
+      <table id="checkoutTable">
+        <thead>
+          <tr>
+            <th>Entity</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Remove</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Items will be dynamically added here -->
+        </tbody>
+      </table>
+      <p id="totalCost">Total Cost: $0</p>
+    </section>
+
+    <!-- Checkout Actions -->
+    <section>
+      <button id="confirmCheckoutButton" class="action-button"><i class="fas fa-check"></i> Confirm</button>
+      <button id="clearCartButton" class="action-button"><i class="fas fa-trash"></i> Clear Cart</button>
+    </section>
+  </div>
+
+  <script type="module" src="js/pages/checkout.js"></script>
+</body>
+</html>
