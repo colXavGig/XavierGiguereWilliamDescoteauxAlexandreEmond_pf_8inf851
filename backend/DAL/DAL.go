@@ -77,7 +77,18 @@ func (this *OracleDB) CreateReceipt(recette Receipt) error {
 	return nil
 }
 
-func (this *OracleDB)ModifyReceipt(recette Receipt){
+func (this *OracleDB) DeleteReceipt(recette Receipt) error {
+	query := `DELETE FROM T_Rectte
+		  WHERE RC_ID = ?`
+	_,err:=this.Exec(query, recette.Id)
+	if err!= nil {
+		return err
+	}
+	return nil
+}
+
+
+func (this *OracleDB) ModifyReceipt(recette Receipt){
  	_,err:=this.Exec("UPDATE T_Recette SET(REC_MONTANT=?,REC_DATE=?,REC_Status=?,UTI_ID=?) Where(REC_ID=?)",recette.Total,
  																			  recette.Date,
  																			  recette.Statut,
@@ -106,14 +117,12 @@ func (db *OracleDB) FetchOneReceipt(id int) (*Receipt, error) {
 }
 
 //User Action
-func (this *OracleDB)FetchOneUser() []Receipt {
-	rows,err := this.Query("Select * From T_Recette")
+func (this *OracleDB)FetchOneUser() User {
+	rows,err := this.Query("Select * From T_Recette") // FIXME: should query user table
 	// TODO: check if there is an error
 
-	// FIXME: use for rows.Next() to iterate
-	for _, row := rows.Scan()  {
+	for _, row := rows.Scan()  { // FIXME: use for rows.Next() to iterate
 		// NOTE: rows.Scan() is used here, add the address of the field you want as outputs
-		// NOTE: returned tuples always has 
 	}
 
 }
