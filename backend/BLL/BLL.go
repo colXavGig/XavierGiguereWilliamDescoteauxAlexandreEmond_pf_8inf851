@@ -59,15 +59,14 @@ func (m *mux) setRoutes() {
 	// api routes
 	api_basePath := "/api"
 	// Receipt CRUD
-	m.HandleFunc("GET "+api_basePath+"/receipt", m.getAllReceipts())
-	m.HandleFunc("GET "+api_basePath+"/receipt/{id}", m.getOneReceipt())
-	m.HandleFunc("POST "+api_basePath+"/receipt", m.createReceipt())
-	m.HandleFunc("PATCH "+api_basePath+"/receipt/{id}", m.modifyReceipt())
-	m.HandleFunc("DELETE "+api_basePath+"/receipt/{id}", m.deleteReceipt())
+	m.HandleFunc("GET "+api_basePath+"/receipts", m.getAllReceipts())
+	m.HandleFunc("GET "+api_basePath+"/receipts/{id}", m.getOneReceipt())
+	m.HandleFunc("POST "+api_basePath+"/receipts/create/{id}", m.createReceipt())
+	m.HandleFunc("DELETE "+api_basePath+"/receipts/delete/{id}", m.deleteReceipt())
 
 	// user path
 	// TODO: login route
-
+	
 	// source path
 	// TODO: GET route for each source
 
@@ -78,37 +77,40 @@ func (m *mux) setRoutes() {
 	// TODO: PATCH validation route
 
 	//proposal routes
-	/*
 		// Authentication Endpoints
-		mux.HandleFunc("/auth/register", registerUser)
-		mux.HandleFunc("/auth/login", loginUser)
-		mux.HandleFunc("/auth/logout", logoutUser)
+		m.HandleFunc("/auth/register", registerUser)
+		m.HandleFunc("/auth/login", loginUser)
+		m.HandleFunc("/auth/logout", logoutUser)
 
 		// User Endpoints
-		mux.HandleFunc("/users", getAllUsers)
-		mux.HandleFunc("/users/create", createUser)
-		mux.HandleFunc("/users/update/", updateUser) // "/users/update/:id"
-		mux.HandleFunc("/users/delete/", deleteUser) // "/users/delete/:id"
+		m.HandleFunc("/users", getAllUsers)
+		m.HandleFunc("/users/create", createUser)
+		m.HandleFunc("/users/update/", updateUser) // "/users/update/:id"
+		m.HandleFunc("/users/delete/", deleteUser) // "/users/delete/:id"
 
 		// Rentable Entity Endpoints
-		mux.HandleFunc("/entities", getAllEntities)
-		mux.HandleFunc("/entities/create", createEntity)
-		mux.HandleFunc("/entities/update/", updateEntity) // "/entities/update/:id"
-		mux.HandleFunc("/entities/delete/", deleteEntity) // "/entities/delete/:id"
+		m.HandleFunc("/entities", getAllEntities)
+		m.HandleFunc("/entities/create", createEntity)
+		m.HandleFunc("/entities/update/", updateEntity) // "/entities/update/:id"
+		m.HandleFunc("/entities/delete/", deleteEntity) // "/entities/delete/:id"
 
 		// Rental Log Endpoints
-		mux.HandleFunc("/rental-logs", getAllRentalLogs)
-		mux.HandleFunc("/rental-logs/create", createRentalLog)
-		mux.HandleFunc("/rental-logs/delete/", deleteRentalLog) // "/rental-logs/delete/:id"
+		m.HandleFunc("/rental-logs", getAllRentalLogs)
+		m.HandleFunc("/rental-logs/create", createRentalLog)
+		m.HandleFunc("/rental-logs/delete/", deleteRentalLog) // "/rental-logs/delete/:id"
 
 		// Receipt Endpoints
-		mux.HandleFunc("/receipts", getAllReceipts)
-		mux.HandleFunc("/receipts/create", createReceipt)
-		mux.HandleFunc("/receipts/update/", updateReceipt) // "/receipts/update/:id"
-		mux.HandleFunc("/receipts/delete/", deleteReceipt) // "/receipts/delete/:id"
-	*/
+		m.HandleFunc("/receipts", getAllReceipts)
+		m.HandleFunc("/receipts/create", createReceipt)
+		m.HandleFunc("/receipts/update/", updateReceipt) // "/receipts/update/:id"
+		m.HandleFunc("/receipts/delete/", deleteReceipt) // "/receipts/delete/:id"
 
 }
+func(m *mux) Login() http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request) {}
+}
+
+
 
 func (m *mux) getAllReceipts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +154,7 @@ func (m *mux) getOneReceipt() http.HandlerFunc {
 			return
 		}
 
-		receipt, err := m.database.FetchOneReceipt(id)
+		receipt, err := m.database.FindOneReceipt(id)
 		if err != nil {
 			log.Printf("Error while fetching receipt with id: %d. Error: %d", id, err.Error())
 			http.Error(w, "error while fetching receipt with id: %d", id)
@@ -190,12 +192,6 @@ func (m *mux) createReceipt() http.HandlerFunc {
 	}
 }
 
-func (m *mux) modifyReceipt() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) { // TODO: Implement modify receipt request handler
-		http.Error(w, "not implemented", http.StatusNotImplemented)
-	}
-}
-
 func (m *mux) deleteReceipt() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("DEETE receipt request received")
@@ -216,7 +212,7 @@ func (m *mux) deleteReceipt() http.HandlerFunc {
 			return
 		}
 
-		if err := m.database.DeleteReceipt(DAL.Receipt{Id: id}); err != nil {
+		if err := m.database.DeleteReceipt(DAL.Receipt{ID: id}); err != nil {
 			log.Printf("Error while deleting receipt with id: %d. Error: %s", id, err.Error())
 			http.Error(w, "Could not delete receipt", http.StatusInternalServerError)
 		}
@@ -229,65 +225,25 @@ func (m *mux) deleteReceipt() http.HandlerFunc {
 	}
 }
 
+
+
 // proposal routes handlers
-/*
-
-// Data Models
-type User struct {
-	ID       int    `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
-}
-
-type RentableEntity struct {
-	ID           int     `json:"id"`
-	Name         string  `json:"name"`
-	Category     string  `json:"category"`
-	PricingModel string  `json:"pricing_model"`
-	Price        float64 `json:"price"`
-	Description  string  `json:"description"`
-	ImagePath    string  `json:"image_path"`
-	IsAvailable  bool    `json:"is_available"`
-}
-
-type RentalLog struct {
-	ID         int    `json:"id"`
-	EntityID   int    `json:"entity_id"`
-	UserID     int    `json:"user_id"`
-	RentalDate string `json:"rental_date"`
-	StartTime  string `json:"start_time"`
-	EndTime    string `json:"end_time"`
-}
-
-type Receipt struct {
-	ID          int     `json:"id"`
-	UserID      int     `json:"user_id"`
-	TotalAmount float64 `json:"total_amount"`
-	Status      string  `json:"status"`
-	CreatedAt   string  `json:"created_at"`
-	ApprovedAt  string  `json:"approved_at"`
-	LineItems   []struct {
-		EntityID int     `json:"entity_id"`
-		Price    float64 `json:"price"`
-	} `json:"line_items"`
-}
-
 
 // ---- Authentication Endpoints ----
 
 // POST /auth/register
-func registerUser(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+func registerUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var input DAL.User
+		
+		json.NewDecoder(r.Body).Decode(&input)
+		userID := 1 // Simulated user ID
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Registration successful", "user_id": userID})
 	}
-	json.NewDecoder(r.Body).Decode(&input)
-	userID := 1 // Simulated user ID
-	json.NewEncoder(w).Encode(map[string]interface{}{"message": "Registration successful", "user_id": userID})
 }
 
 // POST /auth/login
+// TODO: check if vaild
 func loginUser(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email    string `json:"email"`
@@ -298,6 +254,7 @@ func loginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /auth/logout
+// TODO: check if vaild
 func logoutUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
 }
@@ -305,12 +262,14 @@ func logoutUser(w http.ResponseWriter, r *http.Request) {
 // ---- User Endpoints ----
 
 // GET /users
+// TODO: check if vaild
 func getAllUsers(w http.ResponseWriter, r *http.Request) {
 	users := []User{{ID: 1, Email: "admin@example.com", Role: "admin"}}
 	json.NewEncoder(w).Encode(users)
 }
 
 // POST /users/create
+// TODO: check if vaild
 func createUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	json.NewDecoder(r.Body).Decode(&user)
@@ -318,12 +277,14 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // PUT /users/update/:id
+// TODO: check if vaild
 func updateUser(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Path[len("/users/update/"):]
 	json.NewEncoder(w).Encode(map[string]string{"message": "User updated successfully", "id": id})
 }
 
 // DELETE /users/delete/:id
+// TODO: check if vaild
 func deleteUser(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Path[len("/users/delete/"):]
 	json.NewEncoder(w).Encode(map[string]string{"message": "User deleted successfully", "id": id})
@@ -332,12 +293,14 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 // ---- Rentable Entity Endpoints ----
 
 // GET /entities
+// TODO: check if vaild
 func getAllEntities(w http.ResponseWriter, r *http.Request) {
 	entities := []RentableEntity{{ID: 1, Name: "Room 1", Category: "Hotel", PricingModel: "per_day", Price: 100}}
 	json.NewEncoder(w).Encode(entities)
 }
 
 // POST /entities/create
+// TODO: check if vaild
 func createEntity(w http.ResponseWriter, r *http.Request) {
 	var entity RentableEntity
 	json.NewDecoder(r.Body).Decode(&entity)
@@ -345,12 +308,14 @@ func createEntity(w http.ResponseWriter, r *http.Request) {
 }
 
 // PUT /entities/update/:id
+// TODO: check if vaild
 func updateEntity(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Path[len("/entities/update/"):]
 	json.NewEncoder(w).Encode(map[string]string{"message": "Entity updated successfully", "id": id})
 }
 
 // DELETE /entities/delete/:id
+// TODO: check if vaild
 func deleteEntity(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Path[len("/entities/delete/"):]
 	json.NewEncoder(w).Encode(map[string]string{"message": "Entity deleted successfully", "id": id})
@@ -359,12 +324,14 @@ func deleteEntity(w http.ResponseWriter, r *http.Request) {
 // ---- Rental Log Endpoints ----
 
 // GET /rental-logs
+// TODO: check if vaild
 func getAllRentalLogs(w http.ResponseWriter, r *http.Request) {
 	logs := []RentalLog{{ID: 1, EntityID: 1, UserID: 1, RentalDate: "2024-12-06"}}
 	json.NewEncoder(w).Encode(logs)
 }
 
 // POST /rental-logs/create
+// TODO: check if vaild
 func createRentalLog(w http.ResponseWriter, r *http.Request) {
 	var log RentalLog
 	json.NewDecoder(r.Body).Decode(&log)
@@ -372,36 +339,8 @@ func createRentalLog(w http.ResponseWriter, r *http.Request) {
 }
 
 // DELETE /rental-logs/delete/:id
+// TODO: check if vaild
 func deleteRentalLog(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Path[len("/rental-logs/delete/"):]
 	json.NewEncoder(w).Encode(map[string]string{"message": "Rental log deleted successfully", "id": id})
 }
-
-// ---- Receipt Endpoints ----
-
-// GET /receipts
-func getAllReceipts(w http.ResponseWriter, r *http.Request) {
-	receipts := []Receipt{{ID: 1, UserID: 1, TotalAmount: 200, Status: "pending"}}
-	json.NewEncoder(w).Encode(receipts)
-}
-
-// POST /receipts/create
-func createReceipt(w http.ResponseWriter, r *http.Request) {
-	var receipt Receipt
-	json.NewDecoder(r.Body).Decode(&receipt)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Receipt created successfully", "receipt_id": "1"})
-}
-
-// PUT /receipts/update/:id
-func updateReceipt(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/receipts/update/"):]
-	json.NewEncoder(w).Encode(map[string]string{"message": "Receipt status updated successfully", "id": id})
-}
-
-// DELETE /receipts/delete/:id
-func deleteReceipt(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/receipts/delete/"):]
-	json.NewEncoder(w).Encode(map[string]string{"message": "Receipt deleted successfully", "id": id})
-}
-
-*/

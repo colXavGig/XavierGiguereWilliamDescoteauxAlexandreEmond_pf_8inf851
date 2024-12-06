@@ -6,9 +6,7 @@ package DAL
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
-	"time"
 
 	_ "github.com/godror/godror"
 )
@@ -38,7 +36,7 @@ func (this *OracleDB)FetchAllReceipt() ([]Receipt, error) {
 	var recette_list []Receipt // declare a slice of receipt to contains our rows data
 
 	query := `SELECT *
-		  FROM T_Recette`
+		  FROM Receipts`
 	rows,err := this.Query(query) // try to query the db to get all rows in T_Recette
 	if err != nil {
 		// error encountered, log it and return it, 
@@ -54,23 +52,24 @@ func (this *OracleDB)FetchAllReceipt() ([]Receipt, error) {
 		recette := Receipt{} // init an Empty Receipt
 
 		// try to scan the row and affect each by a struct field
-		err := rows.Scan(&recette.Id, &recette.Total, &recette.DATE,&recette.Statut , &recette.Utilisateur_ID)
+		err := rows.Scan(&recette.ID,&recette.UserID, &recette.TotalAmount, &recette.Status,&recette.CreatedAt, &recette.ApprovedAt)
 		if err != nil {
 			return nil, err
 		}
 
-		recette_list := append(recette_list, recette) // insert the new Receipt at the end of the list
+		recette_list = append(recette_list, recette) // insert the new Receipt at the end of the list
 	}
 
 	return recette_list, nil
 }
 
 func (this *OracleDB) CreateReceipt(recette Receipt) error {
-	_,err:=this.Exec("Insert into T_Recette(RC_ID,REC_MONTANT,REC_DATE,REC_Status,UTI_ID) values(?,?,?,?,?)",recette.Id,
-															   recette.Total,
-															   recette.Date,
-															   recette.Statut,
-															   recette.Utilisateur_ID)
+	_,err:=this.Exec("Insert into Receipts(ID, UserID, TotalAmount, Status, CreatedAt, ApprovedAt) values(?,?,?,?,?,?)",recette.ID,
+															   															recette.UserID,
+															   															recette.TotalAmount,
+															   															recette.Status,
+															  															recette.CreatedAt,
+																														recette.ApprovedAt)
 	if(err!= nil){
 		return err
 	}
@@ -78,9 +77,9 @@ func (this *OracleDB) CreateReceipt(recette Receipt) error {
 }
 
 func (this *OracleDB) DeleteReceipt(recette Receipt) error {
-	query := `DELETE FROM T_Rectte
-		  WHERE RC_ID = ?`
-	_,err:=this.Exec(query, recette.Id)
+	query := `DELETE FROM Receipts
+		  WHERE id = ?`
+	_,err:=this.Exec(query, recette.ID)
 	if err!= nil {
 		return err
 	}
@@ -88,45 +87,214 @@ func (this *OracleDB) DeleteReceipt(recette Receipt) error {
 }
 
 
-func (this *OracleDB) ModifyReceipt(recette Receipt){
- 	_,err:=this.Exec("UPDATE T_Recette SET(REC_MONTANT=?,REC_DATE=?,REC_Status=?,UTI_ID=?) Where(REC_ID=?)",recette.Total,
- 																			  recette.Date,
- 																			  recette.Statut,
- 																			  recette.Utilisateur_ID,
-																			  recette.Id)
+func (this *OracleDB) ModifyReceipt(recette Receipt) error {
+ 	_,err:=this.Exec("UPDATE Receipts SET(TotalAmount, Status, CreatedAt, ApprovedAt) Where(ID=?)",recette.TotalAmount,
+ 																			  					   recette.Status,
+ 																			  					   recette.CreatedAt,
+																			  					   recette.ApprovedAt,
+																								   recette.ID)
 	if(err!=nil){
 		return err
 	}
 	return nil
 }
 
-func (db *OracleDB) FetchOneReceipt(id int) (*Receipt, error) {
-	receipt := Receipt{}
+func (db *OracleDB) FindOneReceipt(id int) (*Receipt, error) {
+	recette := Receipt{}
 
 	query := `SELECT *
-		  FROM T_Recette
+		  FROM Receipts
 		  WHERE id = ?`
 	row := db.QueryRow(query, id)
 	
-	if err := row.Scan(&recette.Id, &recette.Total, &recette.DATE,&recette.Statut , &recette.Utilisateur_ID); err != nil {
-		log.Printf("Error while gettiing receipt with id %d", id)
+	if err := row.Scan(&recette.UserID, &recette.TotalAmount, &recette.Status, &recette.CreatedAt, &recette.ApprovedAt); err != nil {
+		log.Printf("Error while getting receipt with id %d", id)
 		return nil, err
 	}
-
-	return &receipt, nil
+	return &recette, nil
 }
 
-//User Action
-func (this *OracleDB)FetchOneUser() User {
-	rows,err := this.Query("Select * From T_Recette") // FIXME: should query user table
-	// TODO: check if there is an error
-
-	for _, row := rows.Scan()  { // FIXME: use for rows.Next() to iterate
-		// NOTE: rows.Scan() is used here, add the address of the field you want as outputs
+///////////////
+//    User  //
+//////////////
+func (this *OracleDB)FetchallUser() ([]User,error) {
+	user:=User{}
+	user_list:=[]User{}
+	rows,err := this.Query("Select * From Users") 
+	
+	if(err!=nil){
+		return nil,err
 	}
 
+	defer rows.Close()
+	for rows.Next()  { // FIXME: use for rows.Next() to iterate
+		// NOTE: rows.Scan() is used here, add the address of the field you want as outputs
+		 err = rows.Scan(&user.Email,&user.Role,&user.Password)
+		if (err !=nil) {
+			return nil,err
+		}
+		
+		user_list=append(user_list, user)
+	}
+
+ return user_list,nil
 }
 
+
+func (this *OracleDB) CreateUser(user User)error{
+	
+_,err:=this.Exec(`INSERT INTO Users(email, role, password, notification_preference) VALUES(?,?,?,?,?)`,user.Email,
+																											    user.Role,
+																											    user.Password,
+																											    user.NotificationPreference)
+
+if(err!=nil){
+	return err
+}
+return nil
+}
+
+func (this *OracleDB) DeleteUser(user User)error{
+	_,err:= this.Exec(`DELETE * Users where email=?`,user.Email)
+
+	if(err!=nil){
+		return err
+	}
+	return nil
+}
+
+
+func (this *OracleDB) ModifyUser(user User)error{
+	_,err:= this.Exec(`UPDATE * Users SET (role=?, password=?, notification_preference=?) WHERE email=?`, user.Role,
+																								  		  user.Password,
+																								  		  user.NotificationPreference,
+																								 		  user.Email)		
+																								  
+	if(err!=nil){
+		return err
+	}
+	return nil
+}
+
+
+func (this * OracleDB) FindOneUser(id string) (*User,error){
+	user:=User{}
+	query:=`Select * Users Where email=?`
+	row:=this.QueryRow(query,id)
+	if err:=row.Scan(&user.Email,&user.Role,&user.Password,&user.NotificationPreference); err!=nil{
+		return nil,err
+	}
+	return &user,nil
+}
+
+  ////////////////
+ //  Rentable  //
+////////////////
+
+func (this * OracleDB) FetchAllRentable()([] RentableEntity, error){
+
+	Rentable:=RentableEntity{}
+	Rentable_list:=[]RentableEntity{}
+
+	rows,err := this.Query("Select * From Rentable_Entities")
+	
+	if(err!=nil){
+		return  nil,err
+	}
+
+	defer rows.Close()
+	for rows.Next(){
+		rows.Scan(&Rentable.ID,&Rentable.Name ,&Rentable.Category ,&Rentable.PricingModel ,&Rentable.Price,
+			  	  &Rentable.Price ,&Rentable.Description,&Rentable.ImagePath ,&Rentable.IsAvailable )
+	
+		Rentable_list=append(Rentable_list,Rentable)
+	}
+	return Rentable_list,nil
+}
+
+func (this * OracleDB) FindOneRentable(id int)(*RentableEntity, error) {
+	Rentable:=RentableEntity{}
+
+	rows:= this.QueryRow("Select * From Rentable_Entities Where ID=?", id)
+
+	if err:=rows.Scan(&Rentable.ID,&Rentable.Name ,&Rentable.Category ,&Rentable.PricingModel ,&Rentable.Price,
+					  &Rentable.Price ,&Rentable.Description,&Rentable.ImagePath ,&Rentable.IsAvailable ); err!=nil{
+		return nil,err
+	}
+	return &Rentable,nil
+}
+
+  ///////////////////
+ //  Rentable Log //
+///////////////////
+
+func(this *OracleDB) FetchAllRentalLog()([]RentalLog,error){
+	Rental:=RentalLog{}
+	Rental_list:=[]RentalLog{}
+
+	query:="Select * from Rental_Logs"
+	rows,err:=this.Query(query)
+
+	if(err!=nil){
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		err=rows.Scan(&Rental.ID, &Rental.EntityID , &Rental.RentalDate, &Rental.StartTime, &Rental.EndTime)
+		if (err !=nil) {
+			return nil,err
+		}
+
+		Rental_list = append(Rental_list,Rental )
+	}
+	return Rental_list,nil
+}
+
+func(this *OracleDB) CreateRentalLog(Rental RentalLog)error{
+	_,err:=this.Exec("INSERT INTO Rental_Logs(EntityID, RentalDate, StartTime, EndTime) Values(?,?,?,?)",Rental.EntityID,
+																										Rental.RentalDate,
+																										Rental.StartTime,
+																										Rental.EndTime)
+
+	if err!=nil{
+		return err
+	}
+	return nil
+}
+
+func(this *OracleDB) DeleteRentalLog(Rental RentalLog)error{
+	_,err:=this.Exec("DELETE * Rental_Logs Where ID=?", Rental.ID)
+
+	if err!=nil{
+		return err
+	}
+	return nil
+}
+
+func(this *OracleDB) ModifyRentalLog(Rental RentalLog)error{
+	_,err:=this.Exec("UPDATE Rental_Logs SET(EntityID=?, RentalDate=?, StartTime=?, EndTime=?) WHERE ID=?",Rental.EntityID,
+																						   				   Rental.RentalDate,
+																						   				   Rental.StartTime,
+																						   				   Rental.EndTime,
+																						            	   Rental.ID)
+	if err!=nil{
+		return err
+	}
+		return nil
+}
+
+
+func(this *OracleDB) FindOneRentalLog(id int)(*RentalLog,error){
+	Rental:=RentalLog{}
+
+	rows:=this.QueryRow("Select * from RentalLogs Where ID=?",id)
+
+	if err:=rows.Scan(&Rental.ID, &Rental.EntityID , &Rental.RentalDate, &Rental.StartTime, &Rental.EndTime); err!=nil{
+		return nil,err
+	}
+	
+	return &Rental,nil
+}
 
 
 //TODO: Create Mapping
