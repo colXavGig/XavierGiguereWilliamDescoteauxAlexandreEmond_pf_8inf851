@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
   
-      // Simulate backend API call for registration
       fetch(`${config.apiBaseUrl}${config.endpoints.register}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
