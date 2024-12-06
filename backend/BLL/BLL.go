@@ -130,7 +130,7 @@ func (m *mux) getOneReceipt() http.HandlerFunc {
 
 		if err := json.NewEncoder(w).Encode(receipt); err != nil {
 			log.Printf("Error while encoding receipt with id: %d. Error: %s", id, err.Error())
-			http.Error(w, "error while encodinf receipt with id: "+id, http.StatusInternalServerError)
+			http.Error(w, "error while encoding receipt with id: "+strconv.Itoa(id), http.StatusInternalServerError) //Itoa is the same as FormatInt(int64(i), 10)
 			return
 		}
 	}
