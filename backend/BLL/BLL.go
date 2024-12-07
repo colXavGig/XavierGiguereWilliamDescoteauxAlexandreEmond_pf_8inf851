@@ -2,6 +2,7 @@ package BLL
 
 import (
 	"encoding/json"
+	"go/token"
 	"log"
 	"net/http"
 	"strconv"
@@ -64,9 +65,7 @@ func (m *mux) setRoutes() {
 	m.HandleFunc("POST "+api_basePath+"/receipts/create/{id}", m.createReceipt())
 	m.HandleFunc("DELETE "+api_basePath+"/receipts/delete/{id}", m.deleteReceipt())
 
-	// user path
-	// TODO: login route
-	
+
 	// source path
 	// TODO: GET route for each source
 
@@ -77,46 +76,228 @@ func (m *mux) setRoutes() {
 	// TODO: PATCH validation route
 
 	//proposal routes
-		// Authentication Endpoints
-		m.HandleFunc("/auth/register", registerUser)
-		m.HandleFunc("/auth/login", loginUser)
-		m.HandleFunc("/auth/logout", logoutUser)
+	// Authentication Endpoints
+	m.HandleFunc("/auth/register", m.registerUser())
+	m.HandleFunc("/auth/login", m.Login())
+	m.HandleFunc("/auth/logout", logoutUser)
 
-		// User Endpoints
-		m.HandleFunc("/users", getAllUsers)
-		m.HandleFunc("/users/create", createUser)
-		m.HandleFunc("/users/update/", updateUser) // "/users/update/:id"
-		m.HandleFunc("/users/delete/", deleteUser) // "/users/delete/:id"
+	// User Endpoints
+	m.HandleFunc("/users", m.getAllUsers())
+	m.HandleFunc("/users/create", m.CreateUser())
+	m.HandleFunc("/users/update/{id}", m.ModifyUser()) // "/users/update/:id"
+	m.HandleFunc("/users/delete/{id}", m.DeleteUser()) // "/users/delete/:id"
 
-		// Rentable Entity Endpoints
-		m.HandleFunc("/entities", getAllEntities)
-		m.HandleFunc("/entities/create", createEntity)
-		m.HandleFunc("/entities/update/", updateEntity) // "/entities/update/:id"
-		m.HandleFunc("/entities/delete/", deleteEntity) // "/entities/delete/:id"
+	// Rentable Entity Endpoints
+	m.HandleFunc("/entities", getAllEntities)
+	//m.HandleFunc("/entities/create", createEntity)
+	m.HandleFunc("/entities/update/{id}", updateEntity) // "/entities/update/:id"
+	// m.HandleFunc("/entities/delete/{id}", deleteEntity) // "/entities/delete/:id"
 
-		// Rental Log Endpoints
-		m.HandleFunc("/rental-logs", getAllRentalLogs)
-		m.HandleFunc("/rental-logs/create", createRentalLog)
-		m.HandleFunc("/rental-logs/delete/", deleteRentalLog) // "/rental-logs/delete/:id"
-
-		// Receipt Endpoints
-		m.HandleFunc("/receipts", getAllReceipts)
-		m.HandleFunc("/receipts/create", createReceipt)
-		m.HandleFunc("/receipts/update/", updateReceipt) // "/receipts/update/:id"
-		m.HandleFunc("/receipts/delete/", deleteReceipt) // "/receipts/delete/:id"
+	// Rental Log Endpoints
+	m.HandleFunc("/rental-logs", getAllRentalLogs)
+	m.HandleFunc("/rental-logs/create", createRentalLog)
+	m.HandleFunc("/rental-logs/delete/{id}", deleteRentalLog) // "/rental-logs/delete/:id"
 
 }
-func(m *mux) Login() http.HandlerFunc{
-	return func(w http.ResponseWriter, r *http.Request) {}
+
+/////////////////////////
+//  Authentification   //
+/////////////////////////
+
+// POST /auth/register
+func (m *mux) registerUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var input DAL.User
+
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			http.Error(w, "could not decode json", http.StatusBadRequest)
+			return
+		}
+
+		input.Role = DAL.UserRoleClient
+		input.NotificationPreference = true
+
+		if err := m.database.CreateUser(input); err != nil {
+			log.Println(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		userID := 1 // Simulated user ID
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Registration successful", "user_id": userID})
+	}
 }
 
+func (m *mux) Login() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		log.Println("Create request received")
+		var user_request DAL.User
 
+		if err := json.NewDecoder(r.Body).Decode(&user_request); err != nil {
+			log.Printf("Error while decoding receipt. Error: %s", err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		log.Println("GET request received. Requesting login")
 
-func (m *mux) getAllReceipts() http.HandlerFunc {
+		user, err := m.database.FindOneUser(user_request.Email)
+		if err != nil {
+			log.Printf("Error Username invalid err:\n %s", err.Error())
+			http.Error(w, "error while fetching one user", http.StatusInternalServerError)
+			return
+		}
+		if user.Password != user.Password {
+			log.Printf("Invalid Password err:\n %s", err.Error())
+
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid credential"})
+			// TODO: return http error 401 unauthorized
+			return
+		} else {
+			token,err := createToken(user.Email)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			data := map[string]interface{}{
+				"token" : token,
+				"user_id"  : user.ID,
+				"user_role":user.Role,
+			}
+			json.NewEncoder(w).Encode(data)
+			return
+		}
+	}
+}
+
+// ///////////////////
+//
+//	User       //
+//
+// ///////////////////
+func (m *mux) getAllUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		log.Println("GET request received. Requesting list of reciept")
+		log.Println("GET request received. Requesting List of User")
+
+		_, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "token verification failed", http.StatusForbidden) 
+			return
+		}
+
+		users, err := m.database.FetchallUser()
+
+		if err != nil {
+			log.Printf("Error while fetching all list. Error: %s\n", err.Error())
+			http.Error(w, "error while fetching", http.StatusInternalServerError)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(&users); err != nil {
+			log.Printf("Could not encode User list Error %s\n", err.Error())
+			http.Error(w, "error while encoding", http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func (m *mux) CreateUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		_, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "token verification failed", http.StatusForbidden) 
+			return
+		}
+		
+		var user DAL.User
+
+		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+			log.Printf("Could not decode Body")
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		log.Printf("User received")
+		m.database.CreateUser(user)
+
+		if err := json.NewEncoder(w).Encode(user); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("Could not create user. Error: %s \n", err.Error())
+			return
+		}
+	}
+}
+
+
+func (m *mux) DeleteUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type","application/json")
+		
+		_, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "token verification failed", http.StatusForbidden) 
+			return
+		}
+		
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			http.Error(w, "{ \"error\" : \"could not parse id\"}", http.StatusBadRequest)
+			return
+		}
+		
+		log.Printf("User received")
+		if err = m.database.DeleteUser(DAL.User{ID: id}); err != nil {
+			http.Error(w, "{ \"error\" : \"\"}", http.StatusBadRequest)
+		}
+
+		
+	}
+}
+
+
+func (m *mux) ModifyUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+	
+		_, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "token verification failed", http.StatusForbidden) 
+			return
+		}
+		
+		id,err:=strconv.Atoi(r.PathValue("id"))
+		if err!=nil{
+			http.Error(w,"could not parse id", http.StatusBadRequest)
+		}
+		
+		log.Printf("User received")
+		
+
+		   if err := m.database.ModifyUser(DAL.User{ID: id}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("Could not Modify user. Error: %s \n", err.Error())
+			return
+		}
+	}
+}
+
+  /////////////////
+ //	  Receipts  //
+/////////////////
+func (m *mux) getAllReceipts() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		
+		log.Println("GET request received. Requesting list of recipt")
+		
+		_, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "token verification failed", http.StatusForbidden) 
+			return
+		}
 
 		receipts, err := m.database.FetchAllReceipt()
 		if err != nil {
@@ -136,8 +317,14 @@ func (m *mux) getAllReceipts() http.HandlerFunc {
 func (m *mux) getOneReceipt() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-
+		
 		log.Println("GET request received for")
+
+		_, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "token verification failed", http.StatusForbidden) 
+			return
+		}
 
 		list, err := m.database.FetchAllReceipt()
 		if err != nil {
@@ -174,10 +361,24 @@ func (m *mux) createReceipt() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 
 		log.Println("Create request received")
+
+		email, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "could not verify header", http.StatusForbidden)
+			return
+		}
+
+		user, err := m.database.FindOneUser(email)
+
 		var receipt DAL.Receipt
 		if err := json.NewDecoder(r.Body).Decode(&receipt); err != nil {
 			log.Printf("Error while decoding receipt. Error: %s", err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if receipt.UserID != user.ID {
+			json.NewEncoder(w).Encode(map[string]string{ "error": "user id and token doesnt match"})
 			return
 		}
 
@@ -194,7 +395,14 @@ func (m *mux) createReceipt() http.HandlerFunc {
 
 func (m *mux) deleteReceipt() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("DEETE receipt request received")
+		
+		log.Println("DELETE receipt request received")
+
+		_, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "token verification failed", http.StatusForbidden) 
+			return
+		}
 
 		list, err := m.database.FetchAllReceipt()
 		if err != nil {
@@ -226,32 +434,71 @@ func (m *mux) deleteReceipt() http.HandlerFunc {
 }
 
 
+////////////////
+// Entites   //
+//////////////
+func (m * mux) getallEntities() http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request){
+		w.Header().Set("Content-Type", "application/json")
+
+		log.Printf("Get request received")
+		
+		_, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "token verification failed", http.StatusForbidden) 
+			return
+		}
+		
+		
+		list,err:=m.database.FetchAllRentable()
+
+		if err!= nil{
+			log.Print("Error couldn't fetch entities Error: &s",err.Error())
+			http.Error(w,"error ehile fetching",http.StatusInternalServerError)
+			return
+		}
+
+		if err:= json.NewEncoder(w).Encode(&list); err!=nil{
+			log.Printf("Could not encode entites list. Error: %s\n", err.Error())
+			http.Error(w, "error while encoding", http.StatusInternalServerError)
+			return
+		}
+
+	}
+
+}
+
+func (m *mux) updateEntities()https.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request){
+		w.Header().Set("Content-Type", "application/json")
+
+		email,err:=verifyToken(r.Header["Token"])
+		if err!=nil{
+			return err
+		}
+
+		user,err:=m.database.FindOneUser(email)
+		if err!=nil{
+
+			return
+		}
+		
+		id,err:=strconv.Atoi(PathValue("id"))
+		if err!=nil{
+			return err
+		}
+		Entites := m.database.FindOneRentable(id)
+			
+		json.NewDecoder(r.Body).Decode(&Entities)
+		
+}
+
+
+
 
 // proposal routes handlers
 
 // ---- Authentication Endpoints ----
-
-// POST /auth/register
-func registerUser() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var input DAL.User
-		
-		json.NewDecoder(r.Body).Decode(&input)
-		userID := 1 // Simulated user ID
-		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Registration successful", "user_id": userID})
-	}
-}
-
-// POST /auth/login
-// TODO: check if vaild
-func loginUser(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	json.NewDecoder(r.Body).Decode(&input)
-	json.NewEncoder(w).Encode(map[string]interface{}{"token": "mock_token", "user_role": "user"})
-}
 
 // POST /auth/logout
 // TODO: check if vaild
@@ -334,6 +581,7 @@ func getAllRentalLogs(w http.ResponseWriter, r *http.Request) {
 // TODO: check if vaild
 func createRentalLog(w http.ResponseWriter, r *http.Request) {
 	var log RentalLog
+	
 	json.NewDecoder(r.Body).Decode(&log)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Rental log created successfully"})
 }

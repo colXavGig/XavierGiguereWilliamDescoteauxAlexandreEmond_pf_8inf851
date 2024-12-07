@@ -6,14 +6,15 @@ type StatusReceipt string
 // Enums
 
 const ( // UserRole Enums
-	UserRoleCommis = "Commis"
-	UserRolePDG    = "PDG"
-	UserRoleClient = "Client"
+	UserRoleCommis = "clerk"
+	UserRolePDG    = "admin"
+	UserRoleClient = "user"
 )
 
 const ( // StatusReceipt Enums
-	StatusReceiptEnAttente = "en_attente"
-	StatusReceiptValide    = "validee"
+	StatusReceiptEnAttente = "pending"
+	StatusReceiptValide    = "approved"
+	StatusReceiptRejetee   = "rejected"
 )
 
 // DTO structs
@@ -59,9 +60,9 @@ type Receipt struct {
 }
 
 type User struct {
-	ID                   int    `json:"id"`
+	ID                   int    `json:"id,omitempty"`
 	Email                string `json:"email"`
 	Password             string `json:"password,omitempty"` // Should be hashed
-	Role                 string `json:"role"`              // "user", "clerk", "admin"
-	NotificationPreference bool  `json:"notification_preference"`
+	Role                 string `json:"role,omitempty"`              // "user", "clerk", "admin"
+	NotificationPreference bool  `json:"notification_preference,omitempty"`
 }

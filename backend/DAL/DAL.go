@@ -64,7 +64,7 @@ func (this *OracleDB)FetchAllReceipt() ([]Receipt, error) {
 }
 
 func (this *OracleDB) CreateReceipt(recette Receipt) error {
-	_,err:=this.Exec("Insert into Receipts(ID, UserID, TotalAmount, Status, CreatedAt, ApprovedAt) values(?,?,?,?,?,?)",recette.ID,
+	_,err:=this.Exec("Insert into Receipts(id, UserID, TotalAmount, Status, CreatedAt, ApprovedAt) values(?,?,?,?,?,?)",recette.ID,
 															   															recette.UserID,
 															   															recette.TotalAmount,
 															   															recette.Status,
@@ -129,7 +129,7 @@ func (this *OracleDB)FetchallUser() ([]User,error) {
 	defer rows.Close()
 	for rows.Next()  { // FIXME: use for rows.Next() to iterate
 		// NOTE: rows.Scan() is used here, add the address of the field you want as outputs
-		 err = rows.Scan(&user.Email,&user.Role,&user.Password)
+		 err = rows.Scan(&user.ID,&user.Email,&user.Role,&user.Password)
 		if (err !=nil) {
 			return nil,err
 		}
@@ -155,8 +155,8 @@ return nil
 }
 
 func (this *OracleDB) DeleteUser(user User)error{
-	_,err:= this.Exec(`DELETE * Users where email=?`,user.Email)
-
+	_,err:= this.Exec(`DELETE * Users where id=?`,user.ID)
+	
 	if(err!=nil){
 		return err
 	}
@@ -177,11 +177,11 @@ func (this *OracleDB) ModifyUser(user User)error{
 }
 
 
-func (this * OracleDB) FindOneUser(id string) (*User,error){
+func (this * OracleDB) FindOneUser(email string) (*User,error){
 	user:=User{}
 	query:=`Select * Users Where email=?`
-	row:=this.QueryRow(query,id)
-	if err:=row.Scan(&user.Email,&user.Role,&user.Password,&user.NotificationPreference); err!=nil{
+	row:=this.QueryRow(query,email)
+	if err:=row.Scan(&user.ID,&user.Email,&user.Role,&user.Password,&user.NotificationPreference); err!=nil{
 		return nil,err
 	}
 	return &user,nil
@@ -205,24 +205,41 @@ func (this * OracleDB) FetchAllRentable()([] RentableEntity, error){
 	defer rows.Close()
 	for rows.Next(){
 		rows.Scan(&Rentable.ID,&Rentable.Name ,&Rentable.Category ,&Rentable.PricingModel ,&Rentable.Price,
-			  	  &Rentable.Price ,&Rentable.Description,&Rentable.ImagePath ,&Rentable.IsAvailable )
+			  	  &Rentable.Description,&Rentable.ImagePath )
+		// TODO: calculate is_available
 	
 		Rentable_list=append(Rentable_list,Rentable)
 	}
 	return Rentable_list,nil
 }
 
-func (this * OracleDB) FindOneRentable(id int)(*RentableEntity, error) {
-	Rentable:=RentableEntity{}
-
-	rows:= this.QueryRow("Select * From Rentable_Entities Where ID=?", id)
-
-	if err:=rows.Scan(&Rentable.ID,&Rentable.Name ,&Rentable.Category ,&Rentable.PricingModel ,&Rentable.Price,
-					  &Rentable.Price ,&Rentable.Description,&Rentable.ImagePath ,&Rentable.IsAvailable ); err!=nil{
-		return nil,err
+func (this * OracleDB) UpdateRentables(item RentableEntity)error{
+	
+	query:=`UPDATE Rentable_Entities 
+		   SET(price=?,description=?,imagepath=?,isavailable=?)
+		   Where id=?
+	`
+	
+	if _,err:=this.Exec(query,item.ID); err!=nil{
+		return err
 	}
-	return &Rentable,nil
+	return nil
 }
+
+
+
+// func (this * OracleDB) FindOneRentable(id int)(*RentableEntity, error) {
+// 	Rentable:=RentableEntity{}
+
+// 	rows:= this.QueryRow("Select * From Rentable_Entities Where id=?", id)
+
+// 	if err:=rows.Scan(&Rentable.ID,&Rentable.Name ,&Rentable.Category ,&Rentable.PricingModel ,&Rentable.Price,
+// 					  &Rentable.Price ,&Rentable.Description,&Rentable.ImagePath ,&Rentable.IsAvailable ); err!=nil{
+// 		return nil,err
+// 	}
+// 	return &Rentable,nil
+// }
+
 
   ///////////////////
  //  Rentable Log //
@@ -263,7 +280,7 @@ func(this *OracleDB) CreateRentalLog(Rental RentalLog)error{
 }
 
 func(this *OracleDB) DeleteRentalLog(Rental RentalLog)error{
-	_,err:=this.Exec("DELETE * Rental_Logs Where ID=?", Rental.ID)
+	_,err:=this.Exec("DELETE * Rental_Logs Where id=?", Rental.ID)
 
 	if err!=nil{
 		return err
@@ -287,7 +304,7 @@ func(this *OracleDB) ModifyRentalLog(Rental RentalLog)error{
 func(this *OracleDB) FindOneRentalLog(id int)(*RentalLog,error){
 	Rental:=RentalLog{}
 
-	rows:=this.QueryRow("Select * from RentalLogs Where ID=?",id)
+	rows:=this.QueryRow("Select * from RentalLogs Where id=?",id)
 
 	if err:=rows.Scan(&Rental.ID, &Rental.EntityID , &Rental.RentalDate, &Rental.StartTime, &Rental.EndTime); err!=nil{
 		return nil,err

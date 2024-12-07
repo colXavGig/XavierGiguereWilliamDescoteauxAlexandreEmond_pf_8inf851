@@ -26,7 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok) {
           return response.json();
         } else {
-          throw new Error('Invalid email or password.');
+          //extract error message from response
+          return response.json().then(data => {
+            let error = new Error('Login failed.');
+            if (data && data.message) {
+              error.message = data.message;
+            }
+            throw error;
+          });
         }
       })
       .then(data => {
@@ -34,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const authState = {
           isLoggedIn: true,
           role: data.role, // Assume the backend sends the role
-          token: data.token, // Assume the backend sends a JWT token
+          token: data.token,
         };
         localStorage.setItem('authState', JSON.stringify(authState));
         window.location.href = 'index.html'; // Redirect to the home page
