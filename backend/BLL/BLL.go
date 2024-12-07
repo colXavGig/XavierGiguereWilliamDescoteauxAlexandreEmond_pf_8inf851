@@ -2,7 +2,6 @@ package BLL
 
 import (
 	"encoding/json"
-	"go/token"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,7 +13,7 @@ import (
 
 type mux struct {
 	*http.ServeMux
-	database *DAL.OracleDB // NOTE: We can create an interface for our database and change database type to the interface
+	database DAL.Repos // NOTE: We can create an interface for our database and change database type to the interface
 }
 
 func NewServer(address string, db_connString string) *http.Server {
@@ -65,7 +64,6 @@ func (m *mux) setRoutes() {
 	m.HandleFunc("POST "+api_basePath+"/receipts/create/{id}", m.createReceipt())
 	m.HandleFunc("DELETE "+api_basePath+"/receipts/delete/{id}", m.deleteReceipt())
 
-
 	// source path
 	// TODO: GET route for each source
 
@@ -79,7 +77,7 @@ func (m *mux) setRoutes() {
 	// Authentication Endpoints
 	m.HandleFunc("/auth/register", m.registerUser())
 	m.HandleFunc("/auth/login", m.Login())
-	m.HandleFunc("/auth/logout", logoutUser)
+	m.HandleFunc("/auth/logout", logoutUser())
 
 	// User Endpoints
 	m.HandleFunc("/users", m.getAllUsers())
@@ -154,15 +152,15 @@ func (m *mux) Login() http.HandlerFunc {
 			// TODO: return http error 401 unauthorized
 			return
 		} else {
-			token,err := createToken(user.Email)
+			token, err := createToken(user.Email)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			data := map[string]interface{}{
-				"token" : token,
-				"user_id"  : user.ID,
-				"user_role":user.Role,
+				"token":     token,
+				"user_id":   user.ID,
+				"user_role": user.Role,
 			}
 			json.NewEncoder(w).Encode(data)
 			return
@@ -183,7 +181,7 @@ func (m *mux) getAllUsers() http.HandlerFunc {
 
 		_, err := verifyToken(r.Header.Get("token"))
 		if err != nil {
-			http.Error(w, "token verification failed", http.StatusForbidden) 
+			http.Error(w, "token verification failed", http.StatusForbidden)
 			return
 		}
 
@@ -208,10 +206,10 @@ func (m *mux) CreateUser() http.HandlerFunc {
 
 		_, err := verifyToken(r.Header.Get("token"))
 		if err != nil {
-			http.Error(w, "token verification failed", http.StatusForbidden) 
+			http.Error(w, "token verification failed", http.StatusForbidden)
 			return
 		}
-		
+
 		var user DAL.User
 
 		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -231,52 +229,48 @@ func (m *mux) CreateUser() http.HandlerFunc {
 	}
 }
 
-
 func (m *mux) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type","application/json")
-		
+		w.Header().Set("Content-Type", "application/json")
+
 		_, err := verifyToken(r.Header.Get("token"))
 		if err != nil {
-			http.Error(w, "token verification failed", http.StatusForbidden) 
+			http.Error(w, "token verification failed", http.StatusForbidden)
 			return
 		}
-		
+
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			http.Error(w, "{ \"error\" : \"could not parse id\"}", http.StatusBadRequest)
 			return
 		}
-		
+
 		log.Printf("User received")
 		if err = m.database.DeleteUser(DAL.User{ID: id}); err != nil {
 			http.Error(w, "{ \"error\" : \"\"}", http.StatusBadRequest)
 		}
 
-		
 	}
 }
-
 
 func (m *mux) ModifyUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-	
+
 		_, err := verifyToken(r.Header.Get("token"))
 		if err != nil {
-			http.Error(w, "token verification failed", http.StatusForbidden) 
+			http.Error(w, "token verification failed", http.StatusForbidden)
 			return
 		}
-		
-		id,err:=strconv.Atoi(r.PathValue("id"))
-		if err!=nil{
-			http.Error(w,"could not parse id", http.StatusBadRequest)
-		}
-		
-		log.Printf("User received")
-		
 
-		   if err := m.database.ModifyUser(DAL.User{ID: id}); err != nil {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			http.Error(w, "could not parse id", http.StatusBadRequest)
+		}
+
+		log.Printf("User received")
+
+		if err := m.database.ModifyUser(DAL.User{ID: id}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Printf("Could not Modify user. Error: %s \n", err.Error())
 			return
@@ -284,18 +278,20 @@ func (m *mux) ModifyUser() http.HandlerFunc {
 	}
 }
 
-  /////////////////
- //	  Receipts  //
-/////////////////
+// ///////////////
+//
+//	Receipts  //
+//
+// ///////////////
 func (m *mux) getAllReceipts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		
+
 		log.Println("GET request received. Requesting list of recipt")
-		
+
 		_, err := verifyToken(r.Header.Get("token"))
 		if err != nil {
-			http.Error(w, "token verification failed", http.StatusForbidden) 
+			http.Error(w, "token verification failed", http.StatusForbidden)
 			return
 		}
 
@@ -317,12 +313,12 @@ func (m *mux) getAllReceipts() http.HandlerFunc {
 func (m *mux) getOneReceipt() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		
+
 		log.Println("GET request received for")
 
 		_, err := verifyToken(r.Header.Get("token"))
 		if err != nil {
-			http.Error(w, "token verification failed", http.StatusForbidden) 
+			http.Error(w, "token verification failed", http.StatusForbidden)
 			return
 		}
 
@@ -378,7 +374,7 @@ func (m *mux) createReceipt() http.HandlerFunc {
 		}
 
 		if receipt.UserID != user.ID {
-			json.NewEncoder(w).Encode(map[string]string{ "error": "user id and token doesnt match"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "user id and token doesnt match"})
 			return
 		}
 
@@ -395,12 +391,12 @@ func (m *mux) createReceipt() http.HandlerFunc {
 
 func (m *mux) deleteReceipt() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		
+
 		log.Println("DELETE receipt request received")
 
 		_, err := verifyToken(r.Header.Get("token"))
 		if err != nil {
-			http.Error(w, "token verification failed", http.StatusForbidden) 
+			http.Error(w, "token verification failed", http.StatusForbidden)
 			return
 		}
 
@@ -433,32 +429,30 @@ func (m *mux) deleteReceipt() http.HandlerFunc {
 	}
 }
 
-
-////////////////
+// //////////////
 // Entites   //
-//////////////
-func (m * mux) getallEntities() http.HandlerFunc{
-	return func(w http.ResponseWriter, r *http.Request){
+// ////////////
+func (m *mux) getallEntities() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		log.Printf("Get request received")
-		
+
 		_, err := verifyToken(r.Header.Get("token"))
 		if err != nil {
-			http.Error(w, "token verification failed", http.StatusForbidden) 
-			return
-		}
-		
-		
-		list,err:=m.database.FetchAllRentable()
-
-		if err!= nil{
-			log.Print("Error couldn't fetch entities Error: &s",err.Error())
-			http.Error(w,"error ehile fetching",http.StatusInternalServerError)
+			http.Error(w, "token verification failed", http.StatusForbidden)
 			return
 		}
 
-		if err:= json.NewEncoder(w).Encode(&list); err!=nil{
+		list, err := m.database.FetchAllRentable()
+
+		if err != nil {
+			log.Print("Error couldn't fetch entities Error: &s", err.Error())
+			http.Error(w, "error ehile fetching", http.StatusInternalServerError)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(&list); err != nil {
 			log.Printf("Could not encode entites list. Error: %s\n", err.Error())
 			http.Error(w, "error while encoding", http.StatusInternalServerError)
 			return
@@ -468,33 +462,40 @@ func (m * mux) getallEntities() http.HandlerFunc{
 
 }
 
-func (m *mux) updateEntities()https.HandlerFunc{
-	return func(w http.ResponseWriter, r *http.Request){
+func (m *mux) updateEntities() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		email,err:=verifyToken(r.Header["Token"])
-		if err!=nil{
-			return err
-		}
-
-		user,err:=m.database.FindOneUser(email)
-		if err!=nil{
-
+		email, err := verifyToken(r.Header.Get("Token"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusForbidden)
 			return
 		}
-		
-		id,err:=strconv.Atoi(PathValue("id"))
-		if err!=nil{
-			return err
+
+		_, err = m.database.FindOneUser(email)
+		if err != nil {
+			log.Printf("Error while finding user. Error: %s", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		Entites := m.database.FindOneRentable(id)
-			
+
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			log.Printf("Error while parsing id. Error: %s", err.Error())
+			http.Error(w, "could not parse id", http.StatusBadRequest)
+			return
+		}
+
+		Entities, err := m.database.FindOneRentable(id)
+		if err != nil {
+			log.Printf("Error while finding rentable with id: %d. Error: %s", id, err.Error())
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
 		json.NewDecoder(r.Body).Decode(&Entities)
-		
+	}
 }
-
-
-
 
 // proposal routes handlers
 
@@ -502,8 +503,11 @@ func (m *mux) updateEntities()https.HandlerFunc{
 
 // POST /auth/logout
 // TODO: check if vaild
-func logoutUser(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
+func logoutUser() http.HandlerFunc {
+	// TODO: implement
+	return func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
+	}
 }
 
 // ---- User Endpoints ----
@@ -511,14 +515,14 @@ func logoutUser(w http.ResponseWriter, r *http.Request) {
 // GET /users
 // TODO: check if vaild
 func getAllUsers(w http.ResponseWriter, r *http.Request) {
-	users := []User{{ID: 1, Email: "admin@example.com", Role: "admin"}}
+	users := []DAL.User{{ID: 1, Email: "admin@example.com", Role: "admin"}}
 	json.NewEncoder(w).Encode(users)
 }
 
 // POST /users/create
 // TODO: check if vaild
 func createUser(w http.ResponseWriter, r *http.Request) {
-	var user User
+	var user DAL.User
 	json.NewDecoder(r.Body).Decode(&user)
 	json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"})
 }
@@ -542,14 +546,14 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 // GET /entities
 // TODO: check if vaild
 func getAllEntities(w http.ResponseWriter, r *http.Request) {
-	entities := []RentableEntity{{ID: 1, Name: "Room 1", Category: "Hotel", PricingModel: "per_day", Price: 100}}
+	entities := []DAL.RentableEntity{{ID: 1, Name: "Room 1", Category: "Hotel", PricingModel: "per_day", Price: 100}}
 	json.NewEncoder(w).Encode(entities)
 }
 
 // POST /entities/create
 // TODO: check if vaild
 func createEntity(w http.ResponseWriter, r *http.Request) {
-	var entity RentableEntity
+	var entity DAL.RentableEntity
 	json.NewDecoder(r.Body).Decode(&entity)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Entity created successfully"})
 }
@@ -573,15 +577,15 @@ func deleteEntity(w http.ResponseWriter, r *http.Request) {
 // GET /rental-logs
 // TODO: check if vaild
 func getAllRentalLogs(w http.ResponseWriter, r *http.Request) {
-	logs := []RentalLog{{ID: 1, EntityID: 1, UserID: 1, RentalDate: "2024-12-06"}}
+	logs := []DAL.RentalLog{{ID: 1, EntityID: 1, UserID: 1, RentalDate: "2024-12-06"}}
 	json.NewEncoder(w).Encode(logs)
 }
 
 // POST /rental-logs/create
 // TODO: check if vaild
 func createRentalLog(w http.ResponseWriter, r *http.Request) {
-	var log RentalLog
-	
+	var log DAL.RentalLog
+
 	json.NewDecoder(r.Body).Decode(&log)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Rental log created successfully"})
 }
