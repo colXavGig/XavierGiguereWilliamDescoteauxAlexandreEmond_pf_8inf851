@@ -4,7 +4,6 @@ go 1.23.3
 
 require (
 	github.com/godror/godror v0.45.2
-	github.com/golang-jwt/jwt v3.2.2+incompatible
 )
 
 require (
