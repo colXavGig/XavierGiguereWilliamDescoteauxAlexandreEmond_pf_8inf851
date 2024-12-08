@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'entity-card';
       card.innerHTML = `
-        <img src="${entity.image_path || 'assets/images/default.jpg'}" alt="${entity.name}">
+        <img src="${entity.image_path || 'images/magasin1.jpg'}" alt="${entity.name}">
         <h3>${entity.name}</h3>
         <p>${entity.description || 'No description available.'}</p>
         <p><strong>Price:</strong> $${entity.price} (${entity.pricing_model})</p>

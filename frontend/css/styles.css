@@ -1,18 +1,32 @@
 /* General Body Styling */
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-    background-color: #f4f4f4;
-    color: #333;
-  }
-  
-  /* Centered Container Styling */
-  .container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-  }
+  margin: 0;
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  background-color: #f4f4f4;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Ensures the body takes the full height of the viewport */
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  flex: 1; /* Allows the container to grow and push the footer down */
+}
+
+/* Footer Styles */
+.footer {
+  background-color: #333;
+  color: white;
+  text-align: center;
+  padding: 4px 0;
+  width: 100%;
+  margin-top: auto; /* Ensures the footer sticks to the bottom when content is short */
+}
+
   
   /* Navbar Styling */
   .navbar {
@@ -38,7 +52,7 @@ body {
   .navbar a:hover {
     text-decoration: underline;
   }
-  
+
   /* Entity Grid */
   .entity-grid {
     display: grid;
@@ -312,3 +326,4 @@ section {
   text-align: right;
   margin: 10px 0;
 }
+

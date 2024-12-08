@@ -2,9 +2,7 @@ module github.com/colXavGig/XavierGiguereWilliamDescoteauxAlexandreEmond_pf_8inf
 
 go 1.23.3
 
-require (
-	github.com/godror/godror v0.45.2
-)
+require github.com/godror/godror v0.45.2
 
 require (
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
