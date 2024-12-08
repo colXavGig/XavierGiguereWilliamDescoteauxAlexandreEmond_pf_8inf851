@@ -76,7 +76,7 @@ func (this *OracleDB) FetchAllReceipt() ([]Receipt, error) {
 }
 
 func (this *OracleDB) CreateReceipt(recette Receipt) error {
-	_, err := this.Exec("Insert into Receipts(id, UserID, TotalAmount, Status, CreatedAt, ApprovedAt) values(?,?,?,?,?,?)", recette.ID,
+	_, err := this.Exec("Insert into Receipts(id, UserID, TotalAmount, Status, CreatedAt, ApprovedAt) values(:1,:2,:3,:4,:5,:6)", recette.ID,
 		recette.UserID,
 		recette.TotalAmount,
 		recette.Status,
@@ -90,7 +90,7 @@ func (this *OracleDB) CreateReceipt(recette Receipt) error {
 
 func (this *OracleDB) DeleteReceipt(recette Receipt) error {
 	query := `DELETE FROM Receipts
-		  WHERE id = ?`
+		  WHERE id = :1`
 	_, err := this.Exec(query, recette.ID)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func (this *OracleDB) DeleteReceipt(recette Receipt) error {
 }
 
 func (this *OracleDB) ModifyReceipt(recette Receipt) error {
-	_, err := this.Exec("UPDATE Receipts SET(TotalAmount, Status, CreatedAt, ApprovedAt) Where(ID=?)", recette.TotalAmount,
+	_, err := this.Exec("UPDATE Receipts SET(TotalAmount, Status, CreatedAt, ApprovedAt) Where(ID=:1)", recette.TotalAmount,
 		recette.Status,
 		recette.CreatedAt,
 		recette.ApprovedAt,
@@ -115,7 +115,7 @@ func (db *OracleDB) FindOneReceipt(id int) (*Receipt, error) {
 
 	query := `SELECT *
 		  FROM Receipts
-		  WHERE id = ?`
+		  WHERE id = :1`
 	row := db.QueryRow(query, id)
 
 	if err := row.Scan(&recette.UserID, &recette.TotalAmount, &recette.Status, &recette.CreatedAt, &recette.ApprovedAt); err != nil {
@@ -173,7 +173,7 @@ func (this *OracleDB) CreateUser(user User) error {
 }
 
 func (this *OracleDB) DeleteUser(user User) error {
-	_, err := this.Exec(`DELETE * Users where id=?`, user.ID)
+	_, err := this.Exec(`DELETE * Users where id=:1`, user.ID)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (this *OracleDB) DeleteUser(user User) error {
 }
 
 func (this *OracleDB) ModifyUser(user User) error {
-	_, err := this.Exec(`UPDATE * Users SET (role=?, password=?, notification_preference=?) WHERE email=?`, user.Role,
+	_, err := this.Exec(`UPDATE * Users SET (role=:1, password=:2, notification_preference=:3) WHERE email=:4`, user.Role,
 		user.Password,
 		user.NotificationPreference,
 		user.Email)
@@ -195,7 +195,7 @@ func (this *OracleDB) ModifyUser(user User) error {
 
 func (this *OracleDB) FindOneUser(email string) (*User, error) {
 	user := User{}
-	query := `Select * Users Where email=?`
+	query := `Select * Users Where email=:1`
 	row := this.QueryRow(query, email)
 	if err := row.Scan(&user.ID, &user.Email, &user.Role, &user.Password, &user.NotificationPreference); err != nil {
 		return nil, err
