@@ -50,7 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
           user_id: data.user_id, // Assuming the backend sends the user ID
         };
         localStorage.setItem('authState', JSON.stringify(authState));
-        window.location.href = 'index.html'; // Redirect to the home page
+        console.log('Auth state saved:', authState);
+
+        // Redirect to the home page
+        window.location.href = 'index.html';
       })
       .catch(error => {
         console.error('Login error:', error);
