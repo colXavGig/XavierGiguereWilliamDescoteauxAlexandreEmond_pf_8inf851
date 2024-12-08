@@ -1,0 +1,32 @@
+services:
+  analyse_proj:
+    container_name: analyse_proj
+    image: analyse_proj
+    restart: unless-stopped
+    build: 
+      tags:
+        - "analyse_proj"
+      context: .
+      dockerfile: dockerfile
+  
+    networks:
+      - bwdev
+    ports:
+      - 8000:8000
+    labels:
+        traefik.enable: true
+        traefik.docker.network: "bwdev"
+        # https router
+        traefik.http.routers.analyse-proj.entrypoints: "websecure, wan-websecure"
+        traefik.http.routers.analyse-proj.rule: "Host(`analyseproj.bwdev.dev`)"
+        traefik.http.routers.analyse-proj.tls: true
+        traefik.http.routers.analyse-proj.tls.certresolver: "cloudflare"
+        traefik.http.routers.analyse-proj.service: analyse-proj
+        
+        # service
+        traefik.http.services.analyse-proj.loadbalancer.server.port: 8000
+        traefik.http.services.analyse-proj.loadbalancer.server.scheme: "http"
+
+networks:
+  bwdev:
+    external: true

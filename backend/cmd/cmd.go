@@ -38,7 +38,7 @@ func SetConnString(connString *string) {
 func SetHostURI(host *string) {
 	info := hostInfo{}
 
-	flag.StringVar(&info.host, "h", "127.0.0.1", "website host url")
+	flag.StringVar(&info.host, "h", "", "website host url")
 	flag.IntVar(&info.port, "port", 8000, "website port")
 
 	*host = info.GetHostURI()

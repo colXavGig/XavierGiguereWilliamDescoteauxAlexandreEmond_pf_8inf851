@@ -76,7 +76,7 @@ func (this *OracleDB) FetchAllReceipt() ([]Receipt, error) {
 }
 
 func (this *OracleDB) CreateReceipt(recette Receipt) error {
-	_, err := this.Exec("Insert into Receipts(id, UserID, TotalAmount, Status, CreatedAt, ApprovedAt) values(?,?,?,?,?,?)", recette.ID,
+	_, err := this.Exec("Insert into Receipts(id, UserID, TotalAmount, Status, CreatedAt, ApprovedAt) values(:1,:2,:3,:4,:5,:6)", recette.ID,
 		recette.UserID,
 		recette.TotalAmount,
 		recette.Status,
@@ -90,7 +90,7 @@ func (this *OracleDB) CreateReceipt(recette Receipt) error {
 
 func (this *OracleDB) DeleteReceipt(recette Receipt) error {
 	query := `DELETE FROM Receipts
-		  WHERE id = ?`
+		  WHERE id = :1`
 	_, err := this.Exec(query, recette.ID)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func (this *OracleDB) DeleteReceipt(recette Receipt) error {
 }
 
 func (this *OracleDB) ModifyReceipt(recette Receipt) error {
-	_, err := this.Exec("UPDATE Receipts SET(TotalAmount, Status, CreatedAt, ApprovedAt) Where(ID=?)", recette.TotalAmount,
+	_, err := this.Exec("UPDATE Receipts SET(TotalAmount, Status, CreatedAt, ApprovedAt) Where(ID=:1)", recette.TotalAmount,
 		recette.Status,
 		recette.CreatedAt,
 		recette.ApprovedAt,
@@ -115,7 +115,7 @@ func (db *OracleDB) FindOneReceipt(id int) (*Receipt, error) {
 
 	query := `SELECT *
 		  FROM Receipts
-		  WHERE id = ?`
+		  WHERE id = :1`
 	row := db.QueryRow(query, id)
 
 	if err := row.Scan(&recette.UserID, &recette.TotalAmount, &recette.Status, &recette.CreatedAt, &recette.ApprovedAt); err != nil {
@@ -173,7 +173,7 @@ func (this *OracleDB) CreateUser(user User) error {
 }
 
 func (this *OracleDB) DeleteUser(user User) error {
-	_, err := this.Exec(`DELETE * Users where id=?`, user.ID)
+	_, err := this.Exec(`DELETE * Users where id=:1`, user.ID)
 
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (this *OracleDB) DeleteUser(user User) error {
 }
 
 func (this *OracleDB) ModifyUser(user User) error {
-	_, err := this.Exec(`UPDATE * Users SET (role=?, password=?, notification_preference=?) WHERE email=?`, user.Role,
+	_, err := this.Exec(`UPDATE * Users SET (role=:1, password=:2, notification_preference=:3) WHERE email=:4`, user.Role,
 		user.Password,
 		user.NotificationPreference,
 		user.Email)
@@ -195,7 +195,7 @@ func (this *OracleDB) ModifyUser(user User) error {
 
 func (this *OracleDB) FindOneUser(email string) (*User, error) {
 	user := User{}
-	query := `Select * Users Where email=?`
+	query := `Select * Users Where email=:1`
 	row := this.QueryRow(query, email)
 	if err := row.Scan(&user.ID, &user.Email, &user.Role, &user.Password, &user.NotificationPreference); err != nil {
 		return nil, err
@@ -238,8 +238,8 @@ func (this *OracleDB) FetchAllRentable() ([]RentableEntity, error) {
 func (this *OracleDB) UpdateRentables(item RentableEntity) error {
 
 	query := `UPDATE Rentable_Entities 
-		   SET(price=?,description=?,imagepath=?,isavailable=?)
-		   Where id=?
+		   SET(price=:1,description=:2,imagepath=:3,isavailable=:4)
+		   Where id=:5
 	`
 
 	if _, err := this.Exec(query, item.ID); err != nil {
@@ -252,7 +252,7 @@ func (this *OracleDB) FindOneRentable(id int) (*RentableEntity, error) {
 	// NOTE: fonction etait comment out mais c'utiliser dans le BLL
 	Rentable := RentableEntity{}
 
-	rows := this.QueryRow("Select * From Rentable_Entities Where id=?", id)
+	rows := this.QueryRow("Select * From Rentable_Entities Where id=:1", id)
 
 	if err := rows.Scan(&Rentable.ID, &Rentable.Name, &Rentable.Category, &Rentable.PricingModel, &Rentable.Price,
 		&Rentable.Price, &Rentable.Description, &Rentable.ImagePath, &Rentable.IsAvailable); err != nil {
@@ -296,7 +296,7 @@ func (this *OracleDB) FetchAllRentalLog() ([]RentalLog, error) {
 }
 
 func (this *OracleDB) CreateRentalLog(Rental RentalLog) error {
-	_, err := this.Exec("INSERT INTO Rental_Logs(EntityID, RentalDate, StartTime, EndTime) Values(?,?,?,?)", Rental.EntityID,
+	_, err := this.Exec("INSERT INTO Rental_Logs(EntityID, RentalDate, StartTime, EndTime) Values(:1,:2,:3,:4)", Rental.EntityID,
 		Rental.RentalDate,
 		Rental.StartTime,
 		Rental.EndTime)
@@ -308,7 +308,7 @@ func (this *OracleDB) CreateRentalLog(Rental RentalLog) error {
 }
 
 func (this *OracleDB) DeleteRentalLog(Rental RentalLog) error {
-	_, err := this.Exec("DELETE * Rental_Logs Where id=?", Rental.ID)
+	_, err := this.Exec("DELETE * Rental_Logs Where id=:1", Rental.ID)
 
 	if err != nil {
 		return err
@@ -317,7 +317,7 @@ func (this *OracleDB) DeleteRentalLog(Rental RentalLog) error {
 }
 
 func (this *OracleDB) ModifyRentalLog(Rental RentalLog) error {
-	_, err := this.Exec("UPDATE Rental_Logs SET(EntityID=?, RentalDate=?, StartTime=?, EndTime=?) WHERE ID=?", Rental.EntityID,
+	_, err := this.Exec("UPDATE Rental_Logs SET(EntityID=:1, RentalDate=:2, StartTime=:3, EndTime=:4) WHERE ID=:5", Rental.EntityID,
 		Rental.RentalDate,
 		Rental.StartTime,
 		Rental.EndTime,
@@ -331,7 +331,7 @@ func (this *OracleDB) ModifyRentalLog(Rental RentalLog) error {
 func (this *OracleDB) FindOneRentalLog(id int) (*RentalLog, error) {
 	Rental := RentalLog{}
 
-	rows := this.QueryRow("Select * from RentalLogs Where id=?", id)
+	rows := this.QueryRow("Select * from RentalLogs Where id=:1", id)
 
 	if err := rows.Scan(&Rental.ID, &Rental.EntityID, &Rental.RentalDate, &Rental.StartTime, &Rental.EndTime); err != nil {
 		return nil, err

@@ -14,7 +14,7 @@
 #### Example
 """
 
-go run main.go -u "db2_fall2024" -password "Baddemon665!" -db "aepro.dev:1521"
+go run main.go -u "db2_fall2024" -password "Baddemon665!" -db "aedev.pro:1521"
 
 """
 
