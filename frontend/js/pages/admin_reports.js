@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetch(endpoint, {
       headers: {
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
       },
     })
       .then(response => {

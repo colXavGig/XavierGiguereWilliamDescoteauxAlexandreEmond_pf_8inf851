@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
       },
       body: JSON.stringify(receipt),
     })

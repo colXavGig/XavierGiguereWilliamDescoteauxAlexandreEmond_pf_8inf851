@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fetch(`${config.apiBaseUrl}/users/${authState.user_id}`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${authState.token}`,
+      'token': authState.token,
     },
   })
     .then(response => {
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fetch(`${config.apiBaseUrl}/receipts`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${authState.token}`,
+      'token': authState.token,
     },
   })
     .then(response => {

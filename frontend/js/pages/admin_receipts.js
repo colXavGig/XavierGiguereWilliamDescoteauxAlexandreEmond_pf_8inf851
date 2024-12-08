@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fetch and display receipts
   fetch(`${config.apiBaseUrl}${config.endpoints.receipts}`, {
     headers: {
-      'Authorization': `Bearer ${authState.token}`,
+      'token': authState.token,
     },
   })
     .then(response => {
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
       },
       body: JSON.stringify({ status }),
     })

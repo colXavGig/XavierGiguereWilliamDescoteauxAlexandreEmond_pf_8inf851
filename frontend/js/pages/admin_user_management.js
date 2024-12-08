@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function fetchUsers() {
     fetch(`${config.apiBaseUrl}${config.endpoints.users}`, {
       headers: {
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
       },
     })
       .then(response => {
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetch(`${config.apiBaseUrl}${config.endpoints.users}/${userId}`, {
       headers: {
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
       },
     })
       .then(response => {
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
       },
       body: JSON.stringify(userData),
     })
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`${config.apiBaseUrl}${config.endpoints.users}/${userId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
       },
     })
       .then(response => {

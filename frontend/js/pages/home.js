@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetch(url, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        'token': authState.token,
       },
     })
       .then(response => {
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'token': authState.token,
       },
       body: JSON.stringify(rentalData),
     })

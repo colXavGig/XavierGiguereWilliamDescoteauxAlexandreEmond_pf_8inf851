@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fetch and display rental logs
   fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}`, {
     headers: {
-      'Authorization': `Bearer ${authState.token}`,
+      'token': authState.token,
     },
   })
     .then(response => response.json())
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
       },
       body: JSON.stringify({
         entity_id: parseInt(entityId),
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}/${logId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
       },
     })
       .then(response => {
@@ -140,7 +140,7 @@ function submitReceipt(userId, totalAmount) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authState.token}`,
+      'token': authState.token,
     },
     body: JSON.stringify({
       user_id: parseInt(userId),
@@ -194,7 +194,7 @@ function generateReport(type, dateOrMonth) {
 
   fetch(endpoint, {
     headers: {
-      'Authorization': `Bearer ${authState.token}`,
+      'token': authState.token,
     },
   })
     .then(response => {
