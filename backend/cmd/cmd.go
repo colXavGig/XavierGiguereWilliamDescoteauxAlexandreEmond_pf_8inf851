@@ -28,7 +28,7 @@ func SetConnString(connString *string) {
 
 	flag.StringVar(&info.user, "u", "db2_fall2024", "user for db conn string")
 	flag.StringVar(&info.password, "password", "Baddemon665!", "password for db conn string")
-	flag.StringVar(&info.host, "db", "aepro.dev:1521/XEPDB1", "host URI")
+	flag.StringVar(&info.host, "db", "aedev.pro:1521/XEPDB1", "host URI")
 	flag.BoolVar(&info.sysdba, "sysdba", false, "bool for use sysdba")
 
 	*connString = info.getConnString()
