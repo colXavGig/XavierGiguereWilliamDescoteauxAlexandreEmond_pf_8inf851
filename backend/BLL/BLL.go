@@ -52,7 +52,7 @@ func newMux(db_connString string) *mux {
 func (m *mux) setRoutes() {
 	log.Println("Setting route to handle...")
 
-	m.HandleFunc("GET /", )
+	m.HandleFunc("GET /", m.redirectToDashboard())
 
 	// Serving static website file
 	ui_basePath := "/dashboard"
