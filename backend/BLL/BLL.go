@@ -50,15 +50,30 @@ func enableCORS(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+func newMux(db_connString string) *mux {
+	log.Println("Setting up multiplexer...")
+
+	database, err := DAL.NewOracleDB(db_connString)
+	if err != nil {
+		log.Fatalf("Could not create multiplexer. Error: %s\n", err.Error())
+		return nil
+	}
+
+	multiplexer := mux{
+		ServeMux: http.NewServeMux(),
+		database: database,
+	}
+	multiplexer.setRoutes()
+
+	return &multiplexer
+}
 
 func (m *mux) setRoutes() {
 	log.Println("Setting route to handle...")
 
 	// Serving static website file
 	ui_basePath := "/dashboard"
-	m.Handle("GET "+ui_basePath+"/", http.StripPrefix(ui_basePath+"/", http.FileServer(http.Dir("../frontend"))))
-	m.Handle("GET "+ui_basePath+"/css/", http.StripPrefix(ui_basePath+"/css/", http.FileServer(http.Dir("../frontend/css"))))
-	m.Handle("GET "+ui_basePath+"/js/", http.StripPrefix(ui_basePath+"/js/", http.FileServer(http.Dir("../frontend/js"))))
+	m.Handle("GET "+ui_basePath, http.StripPrefix(ui_basePath, http.FileServer(http.Dir("../frontend"))))
 
 	// api routes
 	api_basePath := "/api"
