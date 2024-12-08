@@ -161,12 +161,12 @@ func (this *OracleDB) FetchallUser() ([]User, error) {
 
 func (this *OracleDB) CreateUser(user User) error {
 
-	stmt, err := this.Prepare(`INSERT INTO Users(email, role, password, notification_preference) VALUES(?,?,?,?,?)`)
+	stmt, err := this.Prepare("INSERT INTO Users(email, role, password, notification_preference) VALUES(:1,:2,:3,:4)")
 
 	if err != nil {
 		return err
 	}
-	if _, err := stmt.Exec(user.Email,user.Role,user.Password,user.NotificationPreference); err!=nil {
+	if _, err := stmt.Exec(user.Email, user.Role, user.Password, user.NotificationPreference); err != nil {
 		return err
 	}
 	return nil

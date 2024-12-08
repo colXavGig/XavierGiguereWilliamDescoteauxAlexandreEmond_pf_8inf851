@@ -19,7 +19,6 @@ const ( // StatusReceipt Enums
 
 // DTO structs
 
-
 type Validation struct {
 	// TODO: add field
 }
@@ -34,17 +33,16 @@ type RentableEntity struct {
 	Price        float64 `json:"price"`
 	Description  string  `json:"description,omitempty"`
 	ImagePath    string  `json:"image_path,omitempty"`
-	IsAvailable  bool    `json:"is_available"`// NOTE: valeur calculer
+	IsAvailable  bool    `json:"is_available"` // NOTE: valeur calculer
 }
 type RentalLog struct {
 	ID         int    `json:"id"`
 	EntityID   int    `json:"entity_id"`
 	UserID     int    `json:"user_id"`
 	RentalDate string `json:"rental_date"`
-	StartTime  string `json:"start_time,omitempty"` //-----> pas mieux d'avoir 
+	StartTime  string `json:"start_time,omitempty"` //-----> pas mieux d'avoir
 	EndTime    string `json:"end_time,omitempty"`
 }
-
 
 type Receipt struct {
 	ID          int     `json:"id"`
@@ -60,9 +58,9 @@ type Receipt struct {
 }
 
 type User struct {
-	ID                   int    `json:"id,omitempty"`
-	Email                string `json:"email"`
-	Password             string `json:"password,omitempty"` // Should be hashed
-	Role                 string `json:"role,omitempty"`              // "user", "clerk", "admin"
-	NotificationPreference bool  `json:"notification_preference,omitempty"`
+	ID                     int    `json:"id,omitempty"`
+	Email                  string `json:"email"`
+	Password               string `json:"password,omitempty"` // Should be hashed
+	Role                   string `json:"role,omitempty"`     // "user", "clerk", "admin"
+	NotificationPreference int    `json:"notification_preference,omitempty"`
 }

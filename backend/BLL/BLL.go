@@ -52,10 +52,9 @@ func newMux(db_connString string) *mux {
 func (m *mux) setRoutes() {
 	log.Println("Setting route to handle...")
 
-
 	// Serving static website file
 	ui_basePath := "/dashboard"
-	m.Handle("GET "+ui_basePath, http.StripPrefix(ui_basePath, http.FileServer(http.Dir("../frontend"))) )
+	m.Handle("GET "+ui_basePath, http.StripPrefix(ui_basePath, http.FileServer(http.Dir("../frontend"))))
 
 	// api routes
 	api_basePath := "/api"
@@ -122,7 +121,7 @@ func (m *mux) registerUser() http.HandlerFunc {
 		}
 
 		input.Role = DAL.UserRoleClient
-		input.NotificationPreference = true
+		input.NotificationPreference = 1
 
 		if err := m.database.CreateUser(input); err != nil {
 			log.Println(err.Error())
