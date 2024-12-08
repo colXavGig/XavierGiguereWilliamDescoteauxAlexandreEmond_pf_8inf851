@@ -3,7 +3,6 @@ package BLL
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -48,11 +47,11 @@ func verifyToken(tokenString string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Printf("hello")
+
 	if !token.Valid {
 		return "", errors.New("invalid credentials")
 	}
-	log.Printf("hello again")
+
 	claim, fine := token.Claims.(*Claim)
 	if !fine {
 		return "", err

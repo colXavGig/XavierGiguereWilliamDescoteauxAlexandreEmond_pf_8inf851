@@ -42,7 +42,7 @@ func newMux(db_connString string) *mux {
 
 	multiplexer := mux{
 		ServeMux: http.NewServeMux(),
-		database: *&database,
+		database: database,
 	}
 	multiplexer.setRoutes()
 
@@ -64,47 +64,37 @@ func (m *mux) setRoutes() {
 	m.HandleFunc("POST "+api_basePath+"/receipts/create/{id}", m.createReceipt())
 	m.HandleFunc("DELETE "+api_basePath+"/receipts/delete/{id}", m.deleteReceipt())
 
-	// source path
-	// TODO: GET route for each source
-
-	// validation path
-	// TODO: GET all validation route
-	// TODO: GET validation route
-	// TODO: POST validation route
-	// TODO: PATCH validation route
-
 	//proposal routes
 	// Authentication Endpoints
-	m.HandleFunc("/auth/register", m.registerUser()) //----->always returns id 1 when creation of new register
-	m.HandleFunc("/auth/login", m.Login())           //--->works
-	m.HandleFunc("/auth/logout", logoutUser())
+	m.HandleFunc("POST "+api_basePath+"/auth/register", m.registerUser()) //----->always returns id 1 when creation of new register
+	m.HandleFunc("POST "+api_basePath+"/auth/login", m.Login())           //--->works
 
 	// User Endpoints
-	m.HandleFunc("/users", m.getAllUsers())
-	m.HandleFunc("/users/create", m.CreateUser())
-	m.HandleFunc("/users/update/{id}", m.ModifyUser()) // "/users/update/:id"
-	m.HandleFunc("/users/delete/{id}", m.DeleteUser()) // "/users/delete/:id"
+	m.HandleFunc("GET "+api_basePath+"/users", m.getAllUsers())               //--->works
+	m.HandleFunc("POST "+api_basePath+"/users/create", m.CreateUser())        //--->works
+	m.HandleFunc("PUT "+api_basePath+"/users/update/{id}", m.ModifyUser())    // "/users/update/:id"    --->work
+	m.HandleFunc("DELETE "+api_basePath+"/users/delete/{id}", m.DeleteUser()) // "/users/delete/:id"    --->work
 
 	// Rentable Entity Endpoints
-	m.HandleFunc("/entities", getAllEntities)
+	m.HandleFunc("GET "+api_basePath+"/entities", m.getallEntities()) //-----> NOTE:we think it works but cant test frl speculated to only have one value in db
 	//m.HandleFunc("/entities/create", createEntity)
-	m.HandleFunc("/entities/update/{id}", updateEntity) // "/entities/update/:id"
+	m.HandleFunc("PUT "+api_basePath+"/entities/update/{id}", m.updateEntities()) // "/entities/update/:id"
 	// m.HandleFunc("/entities/delete/{id}", deleteEntity) // "/entities/delete/:id"
 
 	// Rental Log Endpoints
-	m.HandleFunc("/rental-logs", getAllRentalLogs)
-	m.HandleFunc("/rental-logs/create", createRentalLog)
-	m.HandleFunc("/rental-logs/delete/{id}", deleteRentalLog) // "/rental-logs/delete/:id"
+	m.HandleFunc("GET "+api_basePath+"/rental-logs", m.getallRentalLogs()) //------> works
+	m.HandleFunc("POST "+api_basePath+"/rental-logs/create", m.createRentalLog())
+	m.HandleFunc("DELETE "+api_basePath+"/rental-logs/delete/{id}", m.deleteRentalLog()) // "/rental-logs/delete/:id"
 
 	// m.HandleFunc("GET /", m.redirectToDashboard(ui_basePath))
 
 }
 
-func (m *mux) redirectToDashboard(url string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, url, http.StatusOK)
-	}
-}
+// func (m *mux) redirectToDashboard(url string) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		http.Redirect(w, r, url, http.StatusOK)
+// 	}
+// }
 
 /////////////////////////
 //  Authentification   //
@@ -276,15 +266,45 @@ func (m *mux) ModifyUser() http.HandlerFunc {
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			http.Error(w, "could not parse id", http.StatusBadRequest)
+			return
+		}
+
+		update := map[string]any{}
+
+		if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		user, err := m.database.FindOneUserID(id)
+		if err != nil {
+			http.Error(w, "could not find user with id", http.StatusBadRequest)
+			log.Printf("could not find user with id: %d", id)
+			return
+		}
+
+		for k, v := range update {
+			switch k {
+			case "email":
+				user.Email = v.(string)
+			case "password":
+				user.Password = v.(string)
+			case "role":
+				user.Role = v.(string)
+			case "notification_preference":
+				user.NotificationPreference = int(v.(float64))
+			}
 		}
 
 		log.Printf("User received")
 
-		if err := m.database.ModifyUser(DAL.User{ID: id}); err != nil {
+		if err := m.database.ModifyUser(*user); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Printf("Could not Modify user. Error: %s \n", err.Error())
 			return
 		}
+
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}
 }
 
@@ -375,6 +395,11 @@ func (m *mux) createReceipt() http.HandlerFunc {
 		}
 
 		user, err := m.database.FindOneUser(email)
+		if err != nil {
+			log.Printf("Error while identifying logged in user. Error: %s", err.Error())
+			http.Error(w, "internal error identifying logged in user", http.StatusInternalServerError)
+			return
+		}
 
 		var receipt DAL.Receipt
 		if err := json.NewDecoder(r.Body).Decode(&receipt); err != nil {
@@ -503,106 +528,145 @@ func (m *mux) updateEntities() http.HandlerFunc {
 			return
 		}
 
-		json.NewDecoder(r.Body).Decode(&Entities)
+		update := map[string]any{}
+
+		if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
+			log.Printf("Error while decoding json. Error: %s", err.Error())
+			http.Error(w, "Error while decoding json. ", http.StatusBadRequest)
+			return
+		}
+
+		for k, v := range update {
+			switch k {
+			case "name":
+				Entities.Name = v.(string)
+			case "category":
+				Entities.Category = v.(string)
+			case "description":
+				Entities.Description = v.(string)
+			case "image_path":
+				Entities.ImagePath = v.(string)
+			case "is_available":
+				Entities.IsAvailable = v.(bool)
+			case "price":
+				Entities.Price = v.(float64)
+			case "pricing_model":
+				Entities.PricingModel = v.(string)
+			}
+		}
+
+		if err := m.database.UpdateRentables(*Entities); err != nil {
+			log.Printf("Error sending update to db. Error: %s", err.Error())
+			http.Error(w, "Error while decoding json. ", http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
-// proposal routes handlers
-
-// ---- Authentication Endpoints ----
-
-// POST /auth/logout
-// TODO: check if vaild
-func logoutUser() http.HandlerFunc {
-	// TODO: implement
+func (m *mux) getallRentalLogs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
+		w.Header().Set("Content-Type", "application/json")
+
+		email, err := verifyToken(r.Header.Get("Token"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
+
+		_, err = m.database.FindOneUser(email)
+		if err != nil {
+			log.Printf("Error while finding user. Error: %s", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		list, err := m.database.FetchAllRentalLog()
+
+		if err != nil {
+			log.Print("Error couldn't fetch entities Error: &s", err.Error())
+			http.Error(w, "error ehile fetching", http.StatusInternalServerError)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(&list); err != nil {
+			log.Printf("Could not encode entites list. Error: %s\n", err.Error())
+			http.Error(w, "error while encoding", http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
-// ---- User Endpoints ----
+func (m *mux) createRentalLog() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 
-// GET /users
-// TODO: check if vaild
-// func getAllUsers(w http.ResponseWriter, r *http.Request) {
-// 	users := []DAL.User{{ID: 1, Email: "admin@example.com", Role: "admin"}}
-// 	json.NewEncoder(w).Encode(users)
-// }
+		email, err := verifyToken(r.Header.Get("Token"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 
-// POST /users/create
-// TODO: check if vaild
-func createUser(w http.ResponseWriter, r *http.Request) {
-	var user DAL.User
-	json.NewDecoder(r.Body).Decode(&user)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"})
+		_, err = m.database.FindOneUser(email)
+		if err != nil {
+			log.Printf("Error while finding user. Error: %s", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		var rental DAL.RentalLog
+
+		if err := json.NewDecoder(r.Body).Decode(&rental); err != nil {
+			log.Printf("Error while decoding json. Error: %s", err.Error())
+			http.Error(w, "Error while decoding json. ", http.StatusBadRequest)
+			return
+		}
+
+		if err := m.database.CreateRentalLog(rental); err != nil {
+			log.Printf(" Error: %s", err.Error())
+			http.Error(w, "Could not create RentalLog", http.StatusInternalServerError)
+		}
+
+		if err := json.NewEncoder(w).Encode(rental); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("Error while encoding into json. Error: %s", err.Error())
+			return
+		}
+	}
 }
 
-// PUT /users/update/:id
-// TODO: check if vaild
-func updateUser(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/users/update/"):]
-	json.NewEncoder(w).Encode(map[string]string{"message": "User updated successfully", "id": id})
-}
+func (m *mux) deleteRentalLog() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 
-// DELETE /users/delete/:id
-// TODO: check if vaild
-func deleteUser(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/users/delete/"):]
-	json.NewEncoder(w).Encode(map[string]string{"message": "User deleted successfully", "id": id})
-}
+		email, err := verifyToken(r.Header.Get("Token"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 
-// ---- Rentable Entity Endpoints ----
+		_, err = m.database.FindOneUser(email)
+		if err != nil {
+			log.Printf("Error while finding user. Error: %s", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-// GET /entities
-// TODO: check if vaild
-func getAllEntities(w http.ResponseWriter, r *http.Request) {
-	entities := []DAL.RentableEntity{{ID: 1, Name: "Room 1", Category: "Hotel", PricingModel: "per_day", Price: 100}}
-	json.NewEncoder(w).Encode(entities)
-}
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			log.Printf("Error while parsing id. Error: %s", err.Error())
+			http.Error(w, "could not parse id", http.StatusBadRequest)
+			return
+		}
 
-// POST /entities/create
-// TODO: check if vaild
-func createEntity(w http.ResponseWriter, r *http.Request) {
-	var entity DAL.RentableEntity
-	json.NewDecoder(r.Body).Decode(&entity)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Entity created successfully"})
-}
+		if err := m.database.DeleteRentalLog(DAL.RentalLog{ID: id}); err != nil {
+			log.Printf("Error while deleting RentalLog with id: %d. Error: %s", id, err.Error())
+			http.Error(w, "Could not delete RentalLog", http.StatusInternalServerError)
+		}
 
-// PUT /entities/update/:id
-// TODO: check if vaild
-func updateEntity(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/entities/update/"):]
-	json.NewEncoder(w).Encode(map[string]string{"message": "Entity updated successfully", "id": id})
-}
+		if err := json.NewEncoder(w).Encode(id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("Error while encoding id: %d into json. Error: %s", id, err.Error())
+			return
+		}
 
-// DELETE /entities/delete/:id
-// TODO: check if vaild
-func deleteEntity(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/entities/delete/"):]
-	json.NewEncoder(w).Encode(map[string]string{"message": "Entity deleted successfully", "id": id})
-}
-
-// ---- Rental Log Endpoints ----
-
-// GET /rental-logs
-// TODO: check if vaild
-func getAllRentalLogs(w http.ResponseWriter, r *http.Request) {
-	logs := []DAL.RentalLog{{ID: 1, EntityID: 1, UserID: 1, RentalDate: "2024-12-06"}}
-	json.NewEncoder(w).Encode(logs)
-}
-
-// POST /rental-logs/create
-// TODO: check if vaild
-func createRentalLog(w http.ResponseWriter, r *http.Request) {
-	var log DAL.RentalLog
-
-	json.NewDecoder(r.Body).Decode(&log)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Rental log created successfully"})
-}
-
-// DELETE /rental-logs/delete/:id
-// TODO: check if vaild
-func deleteRentalLog(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/rental-logs/delete/"):]
-	json.NewEncoder(w).Encode(map[string]string{"message": "Rental log deleted successfully", "id": id})
+	}
 }

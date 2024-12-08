@@ -1,6 +1,6 @@
 const config = {
     // Base URL for the backend API
-    apiBaseUrl: "https://analyseproj.bwdev.dev/api", // Replace with the actual backend URL
+    apiBaseUrl: "/api", // Replace with the actual backend URL
   
     // Endpoints for the API
     endpoints: {

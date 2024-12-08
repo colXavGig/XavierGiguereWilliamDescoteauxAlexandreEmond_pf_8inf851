@@ -135,6 +135,7 @@ type UserRepo interface {
 	CreateUser(User) error
 	DeleteUser(User) error
 	ModifyUser(User) error
+	FindOneUserID(int) (*User, error)
 }
 
 func (this *OracleDB) FetchallUser() ([]User, error) {
@@ -173,21 +174,26 @@ func (this *OracleDB) CreateUser(user User) error {
 }
 
 func (this *OracleDB) DeleteUser(user User) error {
-	_, err := this.Exec(`DELETE * Users where id=:1`, user.ID)
+
+	stmt, err := this.Prepare("DELETE FROM Users where id=:1")
 
 	if err != nil {
+		return err
+	}
+	log.Print(user.ID)
+	if _, err := stmt.Exec(user.ID); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (this *OracleDB) ModifyUser(user User) error {
-	_, err := this.Exec(`UPDATE * Users SET (role=:1, password=:2, notification_preference=:3) WHERE email=:4`, user.Role,
-		user.Password,
-		user.NotificationPreference,
-		user.Email)
+	stmt, err := this.Prepare(`UPDATE Users SET role=:1, password=:2, notification_preference=:3 WHERE id=:4`)
 
 	if err != nil {
+		return err
+	}
+	if _, err := stmt.Exec(user.Role, user.Password, user.NotificationPreference, user.ID); err != nil {
 		return err
 	}
 	return nil
@@ -197,6 +203,15 @@ func (this *OracleDB) FindOneUser(email string) (*User, error) {
 	user := User{}
 	query := `Select * FROM Users Where email=:1`
 	row := this.QueryRow(query, email)
+	if err := row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.NotificationPreference); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+func (this *OracleDB) FindOneUserID(ID int) (*User, error) {
+	user := User{}
+	query := `Select * FROM Users Where id=:1`
+	row := this.QueryRow(query, ID)
 	if err := row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.NotificationPreference); err != nil {
 		return nil, err
 	}
@@ -277,7 +292,7 @@ func (this *OracleDB) FetchAllRentalLog() ([]RentalLog, error) {
 	Rental := RentalLog{}
 	Rental_list := []RentalLog{}
 
-	query := "Select * from Rental_Logs"
+	query := "Select id, entity_id, user_id, rental_date from Rental_Logs"
 	rows, err := this.Query(query)
 
 	if err != nil {
@@ -285,7 +300,7 @@ func (this *OracleDB) FetchAllRentalLog() ([]RentalLog, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&Rental.ID, &Rental.EntityID, &Rental.RentalDate, &Rental.StartTime, &Rental.EndTime)
+		err = rows.Scan(&Rental.ID, &Rental.EntityID, &Rental.UserID, &Rental.RentalDate)
 		if err != nil {
 			return nil, err
 		}
@@ -296,31 +311,33 @@ func (this *OracleDB) FetchAllRentalLog() ([]RentalLog, error) {
 }
 
 func (this *OracleDB) CreateRentalLog(Rental RentalLog) error {
-	_, err := this.Exec("INSERT INTO Rental_Logs(EntityID, RentalDate, StartTime, EndTime) Values(:1,:2,:3,:4)", Rental.EntityID,
-		Rental.RentalDate,
-		Rental.StartTime,
-		Rental.EndTime)
+	stmt, err := this.Prepare("INSERT INTO Rental_Logs(entity_id, rental_date, user_id) Values(:1,TO_DATE(:2, 'YYYY-MM-DD'),:3)") // NOTE: start_time and end_time not used, add if you need it
 
 	if err != nil {
 		return err
 	}
+	if _, err := stmt.Exec(Rental.EntityID, Rental.RentalDate, Rental.UserID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (this *OracleDB) DeleteRentalLog(Rental RentalLog) error {
-	_, err := this.Exec("DELETE * Rental_Logs Where id=:1", Rental.ID)
+	stmt, err := this.Prepare("DELETE FROM Rental_Logs Where id=:1")
 
 	if err != nil {
+		return err
+	}
+	if _, err := stmt.Exec(Rental.ID); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (this *OracleDB) ModifyRentalLog(Rental RentalLog) error {
-	_, err := this.Exec("UPDATE Rental_Logs SET(EntityID=:1, RentalDate=:2, StartTime=:3, EndTime=:4) WHERE ID=:5", Rental.EntityID,
+	_, err := this.Exec("UPDATE Rental_Logs SET(EntityID=:1, RentalDate=:2) WHERE ID=:3", Rental.EntityID, // NOTE: start_time and end_time not used, add if you need it
 		Rental.RentalDate,
-		Rental.StartTime,
-		Rental.EndTime,
 		Rental.ID)
 	if err != nil {
 		return err
