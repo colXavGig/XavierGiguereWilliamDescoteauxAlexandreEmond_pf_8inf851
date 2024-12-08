@@ -52,8 +52,10 @@ func newMux(db_connString string) *mux {
 func (m *mux) setRoutes() {
 	log.Println("Setting route to handle...")
 
+	m.HandleFunc("GET /", )
+
 	// Serving static website file
-	ui_basePath := "/"
+	ui_basePath := "/dashboard"
 	m.Handle("GET "+ui_basePath, http.FileServer(http.Dir("../frontend/")))
 
 	// api routes
@@ -96,6 +98,12 @@ func (m *mux) setRoutes() {
 	m.HandleFunc("/rental-logs/create", createRentalLog)
 	m.HandleFunc("/rental-logs/delete/{id}", deleteRentalLog) // "/rental-logs/delete/:id"
 
+}
+
+func (m *mux) redirectToDashboard() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/dashboard", http.StatusOK)
+	}
 }
 
 /////////////////////////
@@ -146,7 +154,7 @@ func (m *mux) Login() http.HandlerFunc {
 			return
 		}
 		if user.Password != user.Password {
-			log.Printf("Invalid Password err:\n %s", err.Error())
+			log.Printf("Invalid Password err:\n")
 
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid credential"})
 			// TODO: return http error 401 unauthorized
@@ -339,7 +347,7 @@ func (m *mux) getOneReceipt() http.HandlerFunc {
 
 		receipt, err := m.database.FindOneReceipt(id)
 		if err != nil {
-			log.Printf("Error while fetching receipt with id: %d. Error: %d", id, err.Error())
+			log.Printf("Error while fetching receipt with id: %d. Error: %s", id, err.Error())
 			http.Error(w, "error while fetching receipt with id: %d", id)
 			return
 		}
@@ -423,7 +431,7 @@ func (m *mux) deleteReceipt() http.HandlerFunc {
 
 		if err := json.NewEncoder(w).Encode(id); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Print("Error while encoding id: %d into json. Error: %s", id, err.Error())
+			log.Printf("Error while encoding id: %d into json. Error: %s", id, err.Error())
 			return
 		}
 	}
