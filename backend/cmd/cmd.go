@@ -3,6 +3,7 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"log"
 )
 
 // TODO: code cli
@@ -31,12 +32,13 @@ func SetConnString(connString *string) {
 	flag.BoolVar(&info.sysdba, "sysdba", false, "bool for use sysdba")
 
 	*connString = info.getConnString()
+	log.Printf("Connectring: %s",info.getConnString())
 }
 
 func SetHostURI(host *string) {
 	info := hostInfo{}
 
-	flag.StringVar(&info.host, "h", "", "website host url")
+	flag.StringVar(&info.host, "h", "127.0.0.1", "website host url")
 	flag.IntVar(&info.port, "port", 8000, "website port")
 
 	*host = info.GetHostURI()

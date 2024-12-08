@@ -52,11 +52,10 @@ func newMux(db_connString string) *mux {
 func (m *mux) setRoutes() {
 	log.Println("Setting route to handle...")
 
-	m.HandleFunc("GET /", m.redirectToDashboard())
 
 	// Serving static website file
 	ui_basePath := "/dashboard"
-	m.Handle("GET "+ui_basePath, http.FileServer(http.Dir("../frontend/")))
+	m.Handle("GET "+ui_basePath, http.StripPrefix(ui_basePath, http.FileServer(http.Dir("../frontend"))) )
 
 	// api routes
 	api_basePath := "/api"
@@ -98,11 +97,13 @@ func (m *mux) setRoutes() {
 	m.HandleFunc("/rental-logs/create", createRentalLog)
 	m.HandleFunc("/rental-logs/delete/{id}", deleteRentalLog) // "/rental-logs/delete/:id"
 
+	// m.HandleFunc("GET /", m.redirectToDashboard(ui_basePath))
+
 }
 
-func (m *mux) redirectToDashboard() http.HandlerFunc {
+func (m *mux) redirectToDashboard(url string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/dashboard", http.StatusOK)
+		http.Redirect(w, r, url, http.StatusOK)
 	}
 }
 
@@ -522,10 +523,10 @@ func logoutUser() http.HandlerFunc {
 
 // GET /users
 // TODO: check if vaild
-func getAllUsers(w http.ResponseWriter, r *http.Request) {
-	users := []DAL.User{{ID: 1, Email: "admin@example.com", Role: "admin"}}
-	json.NewEncoder(w).Encode(users)
-}
+// func getAllUsers(w http.ResponseWriter, r *http.Request) {
+// 	users := []DAL.User{{ID: 1, Email: "admin@example.com", Role: "admin"}}
+// 	json.NewEncoder(w).Encode(users)
+// }
 
 // POST /users/create
 // TODO: check if vaild

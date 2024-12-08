@@ -16,7 +16,7 @@ func main() {
 	cmd.SetHostURI(&websiteAddr)
 	cmd.SetConnString(&connString)
 
-
+	log.Printf("Listening on \t\thttp://%s/", websiteAddr)
 	srv := BLL.NewServer(websiteAddr, connString)
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("Error while serving. Error: %s", err.Error())
