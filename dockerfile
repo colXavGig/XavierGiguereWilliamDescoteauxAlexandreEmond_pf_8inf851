@@ -13,6 +13,6 @@ WORKDIR /app/backend
 
 RUN go mod download
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o /app.bin
+RUN CGO_ENABLED=1 GOOS=linux go build -o ./app.bin
 
 CMD ["/app/backend/app.bin"]
