@@ -9,12 +9,13 @@ import (
 	"github.com/colXavGig/XavierGiguereWilliamDescoteauxAlexandreEmond_pf_8inf851/DAL"
 )
 
+//TODO: create BLL
+
 type mux struct {
 	*http.ServeMux
-	database DAL.Repos // Interface for the database
+	database DAL.Repos // NOTE: We can create an interface for our database and change database type to the interface
 }
 
-// NewServer sets up and returns a new HTTP server
 func NewServer(address string, db_connString string) *http.Server {
 	log.Println("Setting up server...")
 
@@ -23,33 +24,13 @@ func NewServer(address string, db_connString string) *http.Server {
 		return nil
 	}
 
-	// Wrap multiplexer with CORS middleware
-	handlerWithCORS := enableCORS(multiplexer)
-
 	return &http.Server{
 		Addr:    address,
-		Handler: handlerWithCORS,
+		Handler: multiplexer,
 	}
+
 }
 
-// Middleware to handle CORS
-func enableCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins, adjust as needed
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, token")
-
-		// Handle preflight OPTIONS request
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// Proceed to the next handler
-		next.ServeHTTP(w, r)
-	})
-}
 func newMux(db_connString string) *mux {
 	log.Println("Setting up multiplexer...")
 
