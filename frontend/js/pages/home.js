@@ -6,22 +6,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const entityGrid = document.getElementById('entityGrid');
   const categoryFilter = document.getElementById('categoryFilter');
+  const token = localStorage.getItem('token');
 
   // Fetch and display all rentable entities
   function fetchEntities(filterCategory = 'all') {
-    const url = `${config.apiBaseUrl}${config.endpoints.rentableEntities}`;
+    if (!token) {
+      alert('Your session has expired. Please log in again.');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const url =
+      filterCategory === 'all'
+        ? `${config.apiBaseUrl}${config.endpoints.rentableEntities}`
+        : `${config.apiBaseUrl}${config.endpoints.rentableEntities}?category=${filterCategory}`;
+
     entityGrid.innerHTML = '<p>Loading entities...</p>';
 
-    fetch(url)
-      .then(response => response.json())
+    fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch entities.');
+        }
+        return response.json();
+      })
       .then(data => {
-        // Filter by category if a specific category is selected
-        const filteredData = filterCategory === 'all'
-          ? data
-          : data.filter(entity => entity.category === filterCategory);
-
-        // Render the entities
-        renderEntities(filteredData);
+        renderEntities(data);
       })
       .catch(error => {
         console.error('Error fetching entities:', error);
@@ -42,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'entity-card';
       card.innerHTML = `
-        <img src="${entity.image_path || 'images/magasin1.jpg'}" alt="${entity.name}">
+        <img src="${entity.image_path || 'images/default.jpg'}" alt="${entity.name}">
         <h3>${entity.name}</h3>
         <p>${entity.description || 'No description available.'}</p>
         <p><strong>Price:</strong> $${entity.price} (${entity.pricing_model})</p>
@@ -64,7 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Rent an entity
   function rentEntity(entityId) {
-    // Check if user is logged in
+    if (!token) {
+      alert('You must be logged in to rent an entity.');
+      window.location.href = 'login.html';
+      return;
+    }
+
     const authState = JSON.parse(localStorage.getItem('authState'));
     if (!authState || !authState.isLoggedIn) {
       alert('You must be logged in to rent an entity.');
@@ -72,30 +91,27 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Prepare rental data
     const rentalData = {
       entity_id: entityId,
-      user_id: authState.user_id, // Assuming user_id is in authState
-      rental_date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+      user_id: authState.user_id,
+      rental_date: new Date().toISOString().split('T')[0],
     };
 
-    // Send POST request to register the rental
     fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(rentalData),
     })
       .then(response => {
-        if (response.ok) {
-          alert('Rental successful!');
-          // Optional: Refresh the grid or display a success message
-        } else {
+        if (!response.ok) {
           return response.json().then(error => {
             throw new Error(error.message || 'Failed to rent entity.');
           });
         }
+        alert('Rental successful!');
       })
       .catch(error => {
         console.error('Error renting entity:', error);

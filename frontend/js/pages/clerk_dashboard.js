@@ -14,7 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const rentalLogsTableBody = document.getElementById('rentalLogsTable').querySelector('tbody');
 
   // Fetch and display rental logs
-  fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}`)
+  fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}`, {
+    headers: {
+      'Authorization': `Bearer ${authState.token}`,
+    },
+  })
     .then(response => response.json())
     .then(data => {
       data.forEach(log => {
@@ -41,130 +45,175 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     })
-    .catch(error => console.error('Error fetching rental logs:', error));
-
-  // Add Rental Log
-  document.getElementById('addRentalButton').addEventListener('click', () => {
-    const entityId = prompt('Enter Entity ID:');
-    const userId = prompt('Enter User ID:');
-    const rentalDate = prompt('Enter Rental Date (YYYY-MM-DD):');
-
-    if (entityId && userId && rentalDate) {
-      addRentalLog(entityId, userId, rentalDate);
-    } else {
-      alert('All fields are required to add a rental log.');
-    }
-  });
-
-  // Submit Receipts
-  document.getElementById('submitReceiptButton').addEventListener('click', () => {
-    const userId = prompt('Enter User ID:');
-    const totalAmount = prompt('Enter Total Amount:');
-
-    if (userId && totalAmount) {
-      submitReceipt(userId, totalAmount);
-    } else {
-      alert('All fields are required to submit a receipt.');
-    }
-  });
-
-  // Generate Reports
-  document.getElementById('dailyReportButton').addEventListener('click', () => {
-    const date = prompt('Enter Date for Daily Report (YYYY-MM-DD):');
-    if (date) {
-      generateReport('daily', date);
-    } else {
-      alert('Date is required to generate a daily report.');
-    }
-  });
-
-  document.getElementById('monthlyReportButton').addEventListener('click', () => {
-    const month = prompt('Enter Month for Monthly Report (YYYY-MM):');
-    if (month) {
-      generateReport('monthly', month);
-    } else {
-      alert('Month is required to generate a monthly report.');
-    }
-  });
+    .catch(error => {
+      console.error('Error fetching rental logs:', error);
+      alert('Failed to load rental logs.');
+    });
 
   // Function to add a rental log
   function addRentalLog(entityId, userId, rentalDate) {
+    if (!entityId || !userId || !rentalDate) {
+      alert('All fields are required.');
+      return;
+    }
+
     fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authState.token}`,
       },
       body: JSON.stringify({
-        entity_id: entityId,
-        user_id: userId,
+        entity_id: parseInt(entityId),
+        user_id: parseInt(userId),
         rental_date: rentalDate,
       }),
     })
       .then(response => {
-        if (response.ok) {
-          alert('Rental log added successfully.');
-          location.reload(); // Refresh the page to update the table
-        } else {
-          throw new Error('Failed to add rental log.');
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Failed to add rental log.');
+          });
         }
+        return response.json();
       })
-      .catch(error => console.error('Error adding rental log:', error));
+      .then(log => {
+        // Dynamically add the new log to the table
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${log.id}</td>
+          <td>${log.entity_name}</td>
+          <td>${log.user_email}</td>
+          <td>${log.rental_date}</td>
+          <td>
+            <button class="action-button delete" data-id="${log.id}">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </td>
+        `;
+        rentalLogsTableBody.appendChild(row);
+        alert('Rental log added successfully.');
+      })
+      .catch(error => {
+        console.error('Error adding rental log:', error);
+        alert(`Error: ${error.message}`);
+      });
   }
 
   // Function to delete a rental log
   function deleteRentalLog(logId) {
     fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}/${logId}`, {
       method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authState.token}`,
+      },
     })
       .then(response => {
-        if (response.ok) {
-          alert('Rental log deleted successfully.');
-          location.reload(); // Refresh the page to update the table
-        } else {
-          throw new Error('Failed to delete rental log.');
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Failed to delete rental log.');
+          });
         }
+        // Dynamically remove the log from the table
+        document.querySelector(`button[data-id="${logId}"]`).closest('tr').remove();
+        alert('Rental log deleted successfully.');
       })
-      .catch(error => console.error('Error deleting rental log:', error));
+      .catch(error => {
+        console.error('Error deleting rental log:', error);
+        alert(`Error: ${error.message}`);
+      });
   }
 
   // Function to submit a receipt
-  function submitReceipt(userId, totalAmount) {
-    fetch(`${config.apiBaseUrl}${config.endpoints.receipts}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'token': authState.token
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        total_amount: parseFloat(totalAmount),
-        status: 'pending',
-      }),
+function submitReceipt(userId, totalAmount) {
+  if (!userId || isNaN(userId)) {
+    alert('Invalid User ID. Please enter a valid numeric User ID.');
+    return;
+  }
+
+  if (!totalAmount || isNaN(totalAmount) || parseFloat(totalAmount) <= 0) {
+    alert('Invalid Total Amount. Please enter a positive number.');
+    return;
+  }
+
+  fetch(`${config.apiBaseUrl}${config.endpoints.receipts}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authState.token}`,
+    },
+    body: JSON.stringify({
+      user_id: parseInt(userId),
+      total_amount: parseFloat(totalAmount),
+      status: 'pending', // Assuming status defaults to 'pending'
+    }),
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.message || 'Failed to submit receipt.');
+        });
+      }
+      return response.json();
     })
-      .then(response => {
-        if (response.ok) {
-          alert('Receipt submitted successfully.');
-          location.reload();
-        } else {
-          throw new Error('Failed to submit receipt.');
-        }
-      })
-      .catch(error => console.error('Error submitting receipt:', error));
+    .then(data => {
+      alert('Receipt submitted successfully.');
+      console.log('Submitted receipt:', data);
+      // Optionally update UI if needed
+    })
+    .catch(error => {
+      console.error('Error submitting receipt:', error);
+      alert(`Error: ${error.message}`);
+    });
+}
+// Function to generate a report
+function generateReport(type, dateOrMonth) {
+  if (type === 'daily') {
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dateOrMonth)) {
+      alert('Invalid date format. Please use YYYY-MM-DD.');
+      return;
+    }
+  } else if (type === 'monthly') {
+    // Validate month format (YYYY-MM)
+    const monthRegex = /^\d{4}-\d{2}$/;
+    if (!monthRegex.test(dateOrMonth)) {
+      alert('Invalid month format. Please use YYYY-MM.');
+      return;
+    }
+  } else {
+    alert('Invalid report type.');
+    return;
   }
 
-  // Function to generate a report
-  function generateReport(type, dateOrMonth) {
-    const endpoint =
-      type === 'daily'
-        ? `${config.apiBaseUrl}${config.endpoints.reports.daily}?date=${dateOrMonth}`
-        : `${config.apiBaseUrl}${config.endpoints.reports.monthly}?month=${dateOrMonth}`;
+  const endpoint =
+    type === 'daily'
+      ? `${config.apiBaseUrl}${config.endpoints.reports.revenue}?date=${dateOrMonth}`
+      : `${config.apiBaseUrl}${config.endpoints.reports.availability}?month=${dateOrMonth}`;
 
-    fetch(endpoint)
-      .then(response => response.json())
-      .then(data => {
-        alert(`Report generated: ${JSON.stringify(data)}`);
-        console.log(`Generated ${type} report:`, data);
-      })
-      .catch(error => console.error(`Error generating ${type} report:`, error));
-  }
+  fetch(endpoint, {
+    headers: {
+      'Authorization': `Bearer ${authState.token}`,
+    },
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.message || 'Failed to generate report.');
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      alert(`Report generated successfully. Check console for details.`);
+      console.log(`Generated ${type} report:`, data);
+      // Optionally display report data in the UI
+    })
+    .catch(error => {
+      console.error(`Error generating ${type} report:`, error);
+      alert(`Error: ${error.message}`);
+    });
+}
+
 });

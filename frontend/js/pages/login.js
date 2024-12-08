@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
 
+    // Clear previous error message
+    errorMessage.style.display = 'none';
+
     if (!email || !password) {
       errorMessage.textContent = 'Please enter both email and password.';
       errorMessage.style.display = 'block';
@@ -26,11 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok) {
           return response.json();
         } else {
-          //extract error message from response
-          return response.json().then(data => {
+          return response.text().then(text => {
             let error = new Error('Login failed.');
-            if (data && data.message) {
-              error.message = data.message;
+            try {
+              const data = JSON.parse(text);
+              if (data.message) error.message = data.message;
+            } catch {
+              error.message = text || 'An unexpected error occurred.';
             }
             throw error;
           });
@@ -40,8 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Save authentication state in localStorage
         const authState = {
           isLoggedIn: true,
-          role: data.role, // Assume the backend sends the role
+          role: data.user_role, // Assuming the backend sends the user role
           token: data.token,
+          user_id: data.user_id, // Assuming the backend sends the user ID
         };
         localStorage.setItem('authState', JSON.stringify(authState));
         window.location.href = 'index.html'; // Redirect to the home page

@@ -9,8 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmCheckoutButton = document.getElementById('confirmCheckoutButton');
   const clearCartButton = document.getElementById('clearCartButton');
 
-  // Simulating a cart stored in localStorage
-  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+  // Validate cart data
+  if (!Array.isArray(cart)) {
+    localStorage.removeItem('cart');
+    alert('Invalid cart data. Your cart has been cleared.');
+    cart = [];
+  }
 
   // Render the cart items
   function renderCart() {
@@ -30,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
       row.innerHTML = `
         <td>${item.name}</td>
         <td>${item.category}</td>
-        <td>$${item.price}</td>
+        <td>$${item.price.toFixed(2)}</td>
         <td>
           <button class="action-button remove" data-index="${index}">
             <i class="fas fa-times"></i> Remove
@@ -40,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
       checkoutTableBody.appendChild(row);
     });
 
-    totalCostElement.textContent = `Total Cost: $${totalCost}`;
+    totalCostElement.textContent = `Total Cost: $${totalCost.toFixed(2)}`;
 
     // Add event listeners for remove buttons
     document.querySelectorAll('.remove').forEach(button => {
@@ -62,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   clearCartButton.addEventListener('click', () => {
     if (confirm('Are you sure you want to clear the cart?')) {
       localStorage.removeItem('cart');
+      cart = [];
       renderCart();
     }
   });
@@ -73,42 +80,53 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Get user ID from authState
     const authState = JSON.parse(localStorage.getItem('authState'));
-    if (!authState || !authState.isLoggedIn) {
-      alert('You must be logged in to complete the checkout.');
+    if (!authState || !authState.isLoggedIn || !authState.token) {
+      alert('Your session has expired. Please log in again.');
       window.location.href = 'login.html';
       return;
     }
 
-    const userId = authState.user_id; // Assume `user_id` is stored in authState
-    const totalAmount = cart.reduce((sum, item) => sum + item.price, 0); // Calculate total cost
+    const userId = authState.user_id;
+    const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
 
-    // Prepare receipt data
     const receipt = {
       user_id: userId,
       total_amount: totalAmount,
-      status: 'pending', // Default status
+      status: 'pending',
     };
 
-    // Send POST request to submit the receipt
+    // Disable button to prevent duplicate submissions
+    confirmCheckoutButton.disabled = true;
+
     fetch(`${config.apiBaseUrl}${config.endpoints.receipts}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authState.token}`,
+      },
       body: JSON.stringify(receipt),
     })
       .then(response => {
-        if (response.ok) {
-          alert('Checkout successful!');
-          localStorage.removeItem('cart'); // Clear the cart after successful checkout
-          window.location.href = 'index.html'; // Redirect to home page
-        } else {
-          throw new Error('Failed to complete checkout.');
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Failed to complete checkout.');
+          });
         }
+        return response.json();
+      })
+      .then(() => {
+        alert('Checkout successful!');
+        localStorage.removeItem('cart');
+        cart = [];
+        window.location.href = 'index.html';
       })
       .catch(error => {
         console.error('Error during checkout:', error);
-        alert('An error occurred during checkout. Please try again.');
+        alert(`Error: ${error.message}`);
+      })
+      .finally(() => {
+        confirmCheckoutButton.disabled = false; // Re-enable the button
       });
   });
 

@@ -14,15 +14,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const receiptsTableBody = document.getElementById('receiptsTable').querySelector('tbody');
 
   // Fetch and display receipts
-  fetch(`${config.apiBaseUrl}${config.endpoints.receipts}`)
-    .then(response => response.json())
+  fetch(`${config.apiBaseUrl}${config.endpoints.receipts}`, {
+    headers: {
+      'Authorization': `Bearer ${authState.token}`,
+    },
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.message || 'Failed to fetch receipts.');
+        });
+      }
+      return response.json();
+    })
     .then(data => {
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid data format received.');
+      }
+
+      if (data.length === 0) {
+        receiptsTableBody.innerHTML = '<tr><td colspan="5">No receipts found.</td></tr>';
+        return;
+      }
+
       data.forEach(receipt => {
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${receipt.id}</td>
-          <td>${receipt.user_email}</td>
-          <td>$${receipt.total_amount}</td>
+          <td>${receipt.user_email || 'Unknown'}</td>
+          <td>$${receipt.total_amount.toFixed(2)}</td>
           <td>${receipt.status}</td>
           <td>
             ${receipt.status === 'pending' ? `
@@ -53,23 +73,36 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     })
-    .catch(error => console.error('Error fetching receipts:', error));
+    .catch(error => {
+      console.error('Error fetching receipts:', error);
+      alert(`Error: ${error.message}`);
+    });
 
   // Function to update receipt status
   function updateReceiptStatus(receiptId, status) {
     fetch(`${config.apiBaseUrl}${config.endpoints.receipts}/${receiptId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authState.token}`,
+      },
       body: JSON.stringify({ status }),
     })
       .then(response => {
-        if (response.ok) {
-          alert(`Receipt ${status} successfully.`);
-          location.reload(); // Refresh the page to update the table
-        } else {
-          throw new Error(`Failed to ${status} receipt.`);
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || `Failed to ${status} receipt.`);
+          });
         }
+        // Update status dynamically in the table
+        const row = document.querySelector(`button[data-id="${receiptId}"]`).closest('tr');
+        row.querySelector('td:nth-child(4)').textContent = status;
+        row.querySelector('td:nth-child(5)').innerHTML = ''; // Clear action buttons
+        alert(`Receipt ${status} successfully.`);
       })
-      .catch(error => console.error(`Error updating receipt:`, error));
+      .catch(error => {
+        console.error(`Error updating receipt:`, error);
+        alert(`Error: ${error.message}`);
+      });
   }
 });

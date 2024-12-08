@@ -15,29 +15,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Generate Daily Report
   document.getElementById('dailyReportButton').addEventListener('click', () => {
-    fetch(`${config.apiBaseUrl}${config.endpoints.reports.revenue}?period=daily`)
-      .then(response => response.json())
-      .then(data => {
-        renderReport(data);
-      })
-      .catch(error => console.error('Error generating daily report:', error));
+    generateReport('daily');
   });
 
   // Generate Monthly Report
   document.getElementById('monthlyReportButton').addEventListener('click', () => {
-    fetch(`${config.apiBaseUrl}${config.endpoints.reports.revenue}?period=monthly`)
-      .then(response => response.json())
-      .then(data => {
-        renderReport(data);
-      })
-      .catch(error => console.error('Error generating monthly report:', error));
+    generateReport('monthly');
   });
 
+  // Generic Report Generation Function
+  function generateReport(period) {
+    if (!['daily', 'monthly'].includes(period)) {
+      alert('Invalid report period specified.');
+      return;
+    }
+
+    const endpoint = `${config.apiBaseUrl}${config.endpoints.reports.revenue}?period=${period}`;
+
+    fetch(endpoint, {
+      headers: {
+        'Authorization': `Bearer ${authState.token}`,
+      },
+    })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || `Failed to generate ${period} report.`);
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid data format received.');
+        }
+        renderReport(data, period);
+      })
+      .catch(error => {
+        console.error(`Error generating ${period} report:`, error);
+        alert(`Error: ${error.message}`);
+      });
+  }
+
   // Render Report
-  function renderReport(data) {
+  function renderReport(data, period) {
     reportOutput.innerHTML = `
-      <h2>Report</h2>
+      <h2>${capitalize(period)} Report</h2>
       <pre>${JSON.stringify(data, null, 2)}</pre>
     `;
+  }
+
+  // Utility Function to Capitalize Strings
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 });
