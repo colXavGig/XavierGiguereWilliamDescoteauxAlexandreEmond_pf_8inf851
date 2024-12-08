@@ -1,8 +1,9 @@
 FROM golang:1.23.3
 
 # Install Oracle Instant Client
-# Update and install prerequisites
-RUN apt-get update && apt-get install -y libaio1
+# Install unzip and prerequisites
+RUN apt-get update && apt-get install -y libaio1 unzip
+
 
 # Define Oracle Instant Client version
 ENV ORACLE_VERSION=21_8
