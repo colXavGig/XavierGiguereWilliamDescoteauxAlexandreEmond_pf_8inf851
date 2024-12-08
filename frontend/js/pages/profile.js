@@ -16,20 +16,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const transactionTableBody = document.getElementById('transactionTable').querySelector('tbody');
 
   // Fetch and populate the user's notification preferences
-  fetch(`${config.apiBaseUrl}/users/${authState.token}/preferences`)
-    .then(response => response.json())
+  fetch(`${config.apiBaseUrl}/users/${authState.user_id}`, {
+    method: 'GET',
+    headers: { 'token': authState.token },
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to fetch user data.');
+      return response.json();
+    })
     .then(data => {
       notificationToggle.checked = data.notificationsEnabled;
     })
-    .catch(error => console.error('Error fetching notification preferences:', error));
+    .catch(error => {
+      console.error('Error fetching notification preferences:', error);
+      alert('Failed to load your notification preferences.');
+    });
 
   // Update notification preferences
   notificationToggle.addEventListener('change', () => {
     const notificationsEnabled = notificationToggle.checked;
 
-    fetch(`${config.apiBaseUrl}/users/${authState.token}/preferences`, {
+    fetch(`${config.apiBaseUrl}/users/${authState.user_id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'token': authState.token,
+      },
       body: JSON.stringify({ notificationsEnabled }),
     })
       .then(response => {
@@ -41,14 +53,26 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(error => {
         console.error('Error updating preferences:', error);
+        alert('Failed to update notification preferences. Reverting changes.');
         notificationToggle.checked = !notificationsEnabled; // Revert on failure
       });
   });
 
   // Fetch and populate the user's transaction history
-  fetch(`${config.apiBaseUrl}/receipts?user_id=${authState.token}`)
-    .then(response => response.json())
+  fetch(`${config.apiBaseUrl}/receipts?user_id=${authState.user_id}`, {
+    method: 'GET',
+    headers: { 'token': authState.token },
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to fetch transaction history.');
+      return response.json();
+    })
     .then(data => {
+      if (data.length === 0) {
+        transactionTableBody.innerHTML = '<tr><td colspan="4">No transactions found.</td></tr>';
+        return;
+      }
+
       data.forEach(transaction => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -60,5 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
         transactionTableBody.appendChild(row);
       });
     })
-    .catch(error => console.error('Error fetching transaction history:', error));
+    .catch(error => {
+      console.error('Error fetching transaction history:', error);
+      alert('Failed to load your transaction history.');
+    });
 });

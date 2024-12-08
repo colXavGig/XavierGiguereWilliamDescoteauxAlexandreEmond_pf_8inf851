@@ -133,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'token': authState.token
       },
       body: JSON.stringify({
         user_id: userId,

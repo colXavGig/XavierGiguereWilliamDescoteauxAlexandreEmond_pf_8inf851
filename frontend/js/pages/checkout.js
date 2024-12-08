@@ -73,12 +73,25 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Get user ID from authState
+    const authState = JSON.parse(localStorage.getItem('authState'));
+    if (!authState || !authState.isLoggedIn) {
+      alert('You must be logged in to complete the checkout.');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const userId = authState.user_id; // Assume `user_id` is stored in authState
+    const totalAmount = cart.reduce((sum, item) => sum + item.price, 0); // Calculate total cost
+
+    // Prepare receipt data
     const receipt = {
-      items: cart,
-      totalAmount: cart.reduce((sum, item) => sum + item.price, 0),
+      user_id: userId,
+      total_amount: totalAmount,
+      status: 'pending', // Default status
     };
 
-    // Simulate backend API call
+    // Send POST request to submit the receipt
     fetch(`${config.apiBaseUrl}${config.endpoints.receipts}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -87,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(response => {
         if (response.ok) {
           alert('Checkout successful!');
-          localStorage.removeItem('cart');
+          localStorage.removeItem('cart'); // Clear the cart after successful checkout
           window.location.href = 'index.html'; // Redirect to home page
         } else {
           throw new Error('Failed to complete checkout.');

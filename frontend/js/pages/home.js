@@ -62,9 +62,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Simulate renting an entity
+  // Rent an entity
   function rentEntity(entityId) {
-    alert(`Entity ${entityId} rented! (Functionality to be implemented.)`);
+    // Check if user is logged in
+    const authState = JSON.parse(localStorage.getItem('authState'));
+    if (!authState || !authState.isLoggedIn) {
+      alert('You must be logged in to rent an entity.');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // Prepare rental data
+    const rentalData = {
+      entity_id: entityId,
+      user_id: authState.user_id, // Assuming user_id is in authState
+      rental_date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+    };
+
+    // Send POST request to register the rental
+    fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(rentalData),
+    })
+      .then(response => {
+        if (response.ok) {
+          alert('Rental successful!');
+          // Optional: Refresh the grid or display a success message
+        } else {
+          return response.json().then(error => {
+            throw new Error(error.message || 'Failed to rent entity.');
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error renting entity:', error);
+        alert('An error occurred while renting the entity. Please try again.');
+      });
   }
 
   // Add filter change listener
