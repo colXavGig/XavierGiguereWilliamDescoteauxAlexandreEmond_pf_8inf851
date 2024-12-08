@@ -26,29 +26,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok) {
           return response.json();
         } else {
-          // Parse error response if possible
-          return response.json().then(error => {
-            throw new Error(error.message || 'Invalid email or password.');
+          //extract error message from response
+          return response.json().then(data => {
+            let error = new Error('Login failed.');
+            if (data && data.message) {
+              error.message = data.message;
+            }
+            throw error;
           });
         }
       })
       .then(data => {
-        // Validate the response structure
-        if (!data.token || !data.role || !data.user_id) {
-          throw new Error('Invalid response from server. Please try again.');
-        }
-
         // Save authentication state in localStorage
         const authState = {
           isLoggedIn: true,
-          user_id: data.user_id, // Backend should return user_id
-          role: data.role,       // Backend should return role
-          token: data.token,     // Backend should return a JWT token
+          role: data.role, // Assume the backend sends the role
+          token: data.token,
         };
         localStorage.setItem('authState', JSON.stringify(authState));
-
-        // Redirect to the home page
-        window.location.href = 'index.html';
+        window.location.href = 'index.html'; // Redirect to the home page
       })
       .catch(error => {
         console.error('Login error:', error);
