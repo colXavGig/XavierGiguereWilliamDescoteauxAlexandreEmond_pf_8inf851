@@ -2,6 +2,7 @@ services:
   analyse_proj:
     container_name: analyse_proj
     image: analyse_proj
+    pull_policy: build
     restart: unless-stopped
     build: 
       tags:
