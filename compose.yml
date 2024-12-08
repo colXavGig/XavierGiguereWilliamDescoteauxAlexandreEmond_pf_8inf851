@@ -1,5 +1,5 @@
 services:
-  api-bwdev:
+  analyse_proj:
     container_name: analyse_proj
     image: analyse_proj
     restart: unless-stopped
@@ -26,3 +26,7 @@ services:
         # service
         traefik.http.services.analyse-proj.loadbalancer.server.port: 8000
         traefik.http.services.analyse-proj.loadbalancer.server.scheme: "http"
+
+networks:
+  bwdev:
+    external: true
