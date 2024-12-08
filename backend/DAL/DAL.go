@@ -238,8 +238,8 @@ func (this *OracleDB) FetchAllRentable() ([]RentableEntity, error) {
 func (this *OracleDB) UpdateRentables(item RentableEntity) error {
 
 	query := `UPDATE Rentable_Entities 
-		   SET(price=?,description=?,imagepath=?,isavailable=?)
-		   Where id=?
+		   SET(price=:1,description=:2,imagepath=:3,isavailable=:4)
+		   Where id=:5
 	`
 
 	if _, err := this.Exec(query, item.ID); err != nil {
@@ -252,7 +252,7 @@ func (this *OracleDB) FindOneRentable(id int) (*RentableEntity, error) {
 	// NOTE: fonction etait comment out mais c'utiliser dans le BLL
 	Rentable := RentableEntity{}
 
-	rows := this.QueryRow("Select * From Rentable_Entities Where id=?", id)
+	rows := this.QueryRow("Select * From Rentable_Entities Where id=:1", id)
 
 	if err := rows.Scan(&Rentable.ID, &Rentable.Name, &Rentable.Category, &Rentable.PricingModel, &Rentable.Price,
 		&Rentable.Price, &Rentable.Description, &Rentable.ImagePath, &Rentable.IsAvailable); err != nil {
@@ -296,7 +296,7 @@ func (this *OracleDB) FetchAllRentalLog() ([]RentalLog, error) {
 }
 
 func (this *OracleDB) CreateRentalLog(Rental RentalLog) error {
-	_, err := this.Exec("INSERT INTO Rental_Logs(EntityID, RentalDate, StartTime, EndTime) Values(?,?,?,?)", Rental.EntityID,
+	_, err := this.Exec("INSERT INTO Rental_Logs(EntityID, RentalDate, StartTime, EndTime) Values(:1,:2,:3,:4)", Rental.EntityID,
 		Rental.RentalDate,
 		Rental.StartTime,
 		Rental.EndTime)
@@ -308,7 +308,7 @@ func (this *OracleDB) CreateRentalLog(Rental RentalLog) error {
 }
 
 func (this *OracleDB) DeleteRentalLog(Rental RentalLog) error {
-	_, err := this.Exec("DELETE * Rental_Logs Where id=?", Rental.ID)
+	_, err := this.Exec("DELETE * Rental_Logs Where id=:1", Rental.ID)
 
 	if err != nil {
 		return err
@@ -317,7 +317,7 @@ func (this *OracleDB) DeleteRentalLog(Rental RentalLog) error {
 }
 
 func (this *OracleDB) ModifyRentalLog(Rental RentalLog) error {
-	_, err := this.Exec("UPDATE Rental_Logs SET(EntityID=?, RentalDate=?, StartTime=?, EndTime=?) WHERE ID=?", Rental.EntityID,
+	_, err := this.Exec("UPDATE Rental_Logs SET(EntityID=:1, RentalDate=:2, StartTime=:3, EndTime=:4) WHERE ID=:5", Rental.EntityID,
 		Rental.RentalDate,
 		Rental.StartTime,
 		Rental.EndTime,
@@ -331,7 +331,7 @@ func (this *OracleDB) ModifyRentalLog(Rental RentalLog) error {
 func (this *OracleDB) FindOneRentalLog(id int) (*RentalLog, error) {
 	Rental := RentalLog{}
 
-	rows := this.QueryRow("Select * from RentalLogs Where id=?", id)
+	rows := this.QueryRow("Select * from RentalLogs Where id=:1", id)
 
 	if err := rows.Scan(&Rental.ID, &Rental.EntityID, &Rental.RentalDate, &Rental.StartTime, &Rental.EndTime); err != nil {
 		return nil, err
