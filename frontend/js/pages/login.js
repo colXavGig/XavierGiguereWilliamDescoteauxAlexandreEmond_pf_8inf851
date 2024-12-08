@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`${config.apiBaseUrl}${config.endpoints.login}`, {
       method: 'POST',
       headers: {
-        'token': authState.token,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({ email, password }),
     })
