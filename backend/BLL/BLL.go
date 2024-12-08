@@ -75,8 +75,8 @@ func (m *mux) setRoutes() {
 
 	//proposal routes
 	// Authentication Endpoints
-	m.HandleFunc("/auth/register", m.registerUser())
-	m.HandleFunc("/auth/login", m.Login())
+	m.HandleFunc("/auth/register", m.registerUser()) //----->always returns id 1 when creation of new register
+	m.HandleFunc("/auth/login", m.Login())           //--->works
 	m.HandleFunc("/auth/logout", logoutUser())
 
 	// User Endpoints
@@ -153,7 +153,9 @@ func (m *mux) Login() http.HandlerFunc {
 			http.Error(w, "error while fetching one user", http.StatusInternalServerError)
 			return
 		}
-		if user.Password != user.Password {
+		log.Printf(user.Password)
+		log.Printf(user_request.Password)
+		if user.Password != user_request.Password {
 			log.Printf("Invalid Password err:\n")
 
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid credential"})

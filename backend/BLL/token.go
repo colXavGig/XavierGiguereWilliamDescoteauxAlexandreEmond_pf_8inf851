@@ -2,52 +2,61 @@ package BLL
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 )
 
 type Claim struct {
-	email string
-	exp int64
-	jwt.Claims
+	Email string
+
+	jwt.StandardClaims
 }
 
 var secretKey = []byte("dafsedgfasgfaqerg")
 
 func createToken(email string) (string, error) {
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, 
-        Claim{
-			email: email,
-			exp: time.Now().Add(time.Hour * 1).Unix(),
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+		Claim{
+			Email: email,
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: time.Now().Add(time.Hour * 1).Unix(), // Set token expiry to 1 hour
+			},
 		})
 
-    tokenString, err := token.SignedString(secretKey)
-    if err != nil {
-    return "", err
-    }
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
 
- return tokenString, nil
+	return tokenString, nil
 }
 
 func verifyToken(tokenString string) (string, error) {
+
 	token, err := jwt.ParseWithClaims(tokenString,
-		Claim{},
+		&Claim{},
 		func(token *jwt.Token) (interface{}, error) {
-	   		return secretKey, nil
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return secretKey, nil
 		})
-   
+
 	if err != nil {
-	   return "", err
+		return "", err
 	}
-   
+	log.Printf("hello")
 	if !token.Valid {
-	   return "", errors.New("invalid credentials")
+		return "", errors.New("invalid credentials")
 	}
-	claim, fine := token.Claims.(Claim)
+	log.Printf("hello again")
+	claim, fine := token.Claims.(*Claim)
 	if !fine {
 		return "", err
 	}
-   
-	return claim.email, nil
- }
+
+	return claim.Email, nil
+}

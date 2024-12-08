@@ -148,7 +148,7 @@ func (this *OracleDB) FetchallUser() ([]User, error) {
 
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&user.ID, &user.Email, &user.Role, &user.Password)
+		err = rows.Scan(&user.ID, &user.Email, &user.Role, &user.Password, &user.NotificationPreference)
 		if err != nil {
 			return nil, err
 		}
@@ -161,12 +161,12 @@ func (this *OracleDB) FetchallUser() ([]User, error) {
 
 func (this *OracleDB) CreateUser(user User) error {
 
-	stmt, err := this.Prepare("INSERT INTO Users(email, role, password, notification_preference) VALUES(:1,:2,:3,:4)")
+	stmt, err := this.Prepare("INSERT INTO Users(email,password, role, notification_preference) VALUES(:1,:2,:3,:4)")
 
 	if err != nil {
 		return err
 	}
-	if _, err := stmt.Exec(user.Email, user.Role, user.Password, user.NotificationPreference); err != nil {
+	if _, err := stmt.Exec(user.Email, user.Password, user.Role, user.NotificationPreference); err != nil {
 		return err
 	}
 	return nil
@@ -195,9 +195,9 @@ func (this *OracleDB) ModifyUser(user User) error {
 
 func (this *OracleDB) FindOneUser(email string) (*User, error) {
 	user := User{}
-	query := `Select * Users Where email=:1`
+	query := `Select * FROM Users Where email=:1`
 	row := this.QueryRow(query, email)
-	if err := row.Scan(&user.ID, &user.Email, &user.Role, &user.Password, &user.NotificationPreference); err != nil {
+	if err := row.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.NotificationPreference); err != nil {
 		return nil, err
 	}
 	return &user, nil
