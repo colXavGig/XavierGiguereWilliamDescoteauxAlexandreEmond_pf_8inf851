@@ -54,7 +54,7 @@ func (m *mux) setRoutes() {
 
 	// Serving static website file
 	ui_basePath := "/dashboard"
-	m.Handle("GET "+ui_basePath, http.StripPrefix(ui_basePath, http.FileServer(http.Dir("../frontend"))))
+	m.Handle("GET "+ui_basePath+"/", http.StripPrefix(ui_basePath+"/", http.FileServer(http.Dir("../frontend"))))
 
 	// api routes
 	api_basePath := "/api"
