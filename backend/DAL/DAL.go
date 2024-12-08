@@ -6,6 +6,7 @@ package DAL
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 
 	_ "github.com/godror/godror"
@@ -58,13 +59,13 @@ func (this *OracleDB) FetchAllReceipt() ([]Receipt, error) {
 	}
 	defer rows.Close() // close the connections to the rows (to the transactions) before leaving this scope
 
-	recette_list = make([]Receipt, 5) // initialise the list with a slice of capacity=5
+	recette_list = []Receipt{}// initialise the list with a slice of capacity=5
 
 	for rows.Next() { // if there is a next, continue to iterate
 		recette := Receipt{} // init an Empty Receipt
 
 		// try to scan the row and affect each by a struct field
-		err := rows.Scan(&recette.ID, &recette.UserID, &recette.TotalAmount, &recette.Status, &recette.CreatedAt, &recette.ApprovedAt)
+		err := rows.Scan(&recette.ID, &recette.UserID, &recette.TotalAmount, &recette.Status, &recette.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -76,16 +77,28 @@ func (this *OracleDB) FetchAllReceipt() ([]Receipt, error) {
 }
 
 func (this *OracleDB) CreateReceipt(recette Receipt) error {
-	_, err := this.Exec("Insert into Receipts(id, UserID, TotalAmount, Status, CreatedAt, ApprovedAt) values(:1,:2,:3,:4,:5,:6)", recette.ID,
+	_, err := this.Exec("Insert into Receipts(user_id, total_amount, status) values(:1,:2,:3)", 
 		recette.UserID,
 		recette.TotalAmount,
-		recette.Status,
-		recette.CreatedAt,
-		recette.ApprovedAt)
+		recette.Status,)
 	if err != nil {
 		return err
 	}
+
+	for _, item := range recette.LineItems {
+		if err := this.AssociateLineItems(item); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func (db *OracleDB) AssociateLineItems(lineItems LineItem) error {
+	// TODO:
+	// TODO: implement see Receipt_Line_Items table
+	// TODO:
+
+	return errors.New("Association line items func not implemented") // NOTE: delete line once implemented
 }
 
 func (this *OracleDB) DeleteReceipt(recette Receipt) error {

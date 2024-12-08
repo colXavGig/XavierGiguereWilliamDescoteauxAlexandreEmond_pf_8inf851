@@ -61,7 +61,7 @@ func (m *mux) setRoutes() {
 	// Receipt CRUD
 	m.HandleFunc("GET "+api_basePath+"/receipts", m.getAllReceipts())
 	m.HandleFunc("GET "+api_basePath+"/receipts/{id}", m.getOneReceipt())
-	m.HandleFunc("POST "+api_basePath+"/receipts/create/{id}", m.createReceipt())
+	m.HandleFunc("POST "+api_basePath+"/receipts/create", m.createReceipt())
 	m.HandleFunc("DELETE "+api_basePath+"/receipts/delete/{id}", m.deleteReceipt())
 
 	//proposal routes
@@ -408,13 +408,21 @@ func (m *mux) createReceipt() http.HandlerFunc {
 			return
 		}
 
-		if receipt.UserID != user.ID {
-			json.NewEncoder(w).Encode(map[string]string{"error": "user id and token doesnt match"})
-			return
+		if receipt.UserID == 0 {
+			receipt.UserID = user.ID
+		}
+
+		if receipt.Status == "" {
+			receipt.Status = DAL.StatusReceiptEnAttente
 		}
 
 		log.Printf("%-v object received.\n", receipt)
-		m.database.CreateReceipt(receipt)
+		
+		if err := m.database.CreateReceipt(receipt); err != nil {
+			log.Printf("Error while creating receipt in db. Error: %s", err.Error())
+			http.Error(w, "internal error, receipt was not created", http.StatusInternalServerError)
+			return
+		}
 
 		if err := json.NewEncoder(w).Encode(receipt); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

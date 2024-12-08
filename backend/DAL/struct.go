@@ -48,13 +48,15 @@ type Receipt struct {
 	ID          int     `json:"id"`
 	UserID      int     `json:"user_id"`
 	TotalAmount float64 `json:"total_amount"`
-	Status      string  `json:"status"` // "pending", "approved", "rejected"
+	Status      string  `json:"status,omitempty"` // "pending", "approved", "rejected"
 	CreatedAt   string  `json:"created_at"`
-	ApprovedAt  string  `json:"approved_at,omitempty"`
-	LineItems   []struct {
-		EntityID int     `json:"entity_id"`
-		Price    float64 `json:"price"`
-	} `json:"line_items"`
+	ApprovedAt  string  `json:"approved_at,omitempty"` // FIXME: not in table? 
+	LineItems   []LineItem `json:"line_items"`
+}
+
+type LineItem struct {
+	EntityID int     `json:"entity_id"`
+	Price    float64 `json:"price"`
 }
 
 type User struct {
