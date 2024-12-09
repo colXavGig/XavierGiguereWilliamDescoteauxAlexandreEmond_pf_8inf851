@@ -12,6 +12,8 @@ export function loadNavbar() {
           <a href="clerk_dashboard.html"><i class="fas fa-tools"></i> Dashboard</a>
         ` : ''}
         ${authState.role === 'admin' ? `
+          <a href="admin_user_management.html"><i class="fas fa-users"></i> User Management</a>
+          <a href="admin_receipts.html"><i class="fas fa-file-invoice-dollar"></i> Receipts</a>
           <a href="admin_reports.html"><i class="fas fa-chart-bar"></i> Reports</a>
         ` : ''}
         <a id="logout" href="#"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -30,16 +32,3 @@ export function loadNavbar() {
     });
   }
 }
-
-
-
-// to use in restricted pages
-/*
-document.addEventListener('DOMContentLoaded', () => {
-  const authState = JSON.parse(localStorage.getItem('authState'));
-  if (!authState || !authState.isLoggedIn) {
-    alert('You must be logged in to access this page.');
-    window.location.href = 'login.html';
-  }
-});
-*/

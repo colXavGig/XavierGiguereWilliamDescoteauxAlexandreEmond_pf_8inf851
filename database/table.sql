@@ -10,8 +10,14 @@ CREATE TABLE Users (
 -- Insert sample data for users
 INSERT INTO Users (email, password, role, notification_preference)
 VALUES 
-('admin@test.com', '123', 'admin', 0),
-('clerk@test.com', '123', 'clerk', 0),
+('admin@test.com', '123', 'admin', 0);
+
+INSERT INTO Users (email, password, role, notification_preference)
+VALUES 
+('clerk@test.com', '123', 'clerk', 0);
+
+INSERT INTO Users (email, password, role, notification_preference)
+VALUES
 ('user@test.com', '123', 'user', 1);
 
 -- Table 1: Rentable Entities

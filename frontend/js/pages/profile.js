@@ -4,7 +4,6 @@ import config from '../config.js';
 document.addEventListener('DOMContentLoaded', () => {
   loadNavbar();
 
-  // Fetch the user's profile data
   const authState = JSON.parse(localStorage.getItem('authState'));
   if (!authState || !authState.isLoggedIn) {
     alert('Please log in to access your profile.');
@@ -18,14 +17,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fetch and populate the user's notification preferences
   fetch(`${config.apiBaseUrl}/users/${authState.user_id}`, {
     method: 'GET',
-    headers: { 'token': authState.token },
+    headers: {
+      'token': authState.token,
+    },
   })
     .then(response => {
       if (!response.ok) throw new Error('Failed to fetch user data.');
       return response.json();
     })
     .then(data => {
-      notificationToggle.checked = data.notificationsEnabled;
+      notificationToggle.checked = data.notification_preference === 1;
     })
     .catch(error => {
       console.error('Error fetching notification preferences:', error);
@@ -39,10 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`${config.apiBaseUrl}/users/${authState.user_id}`, {
       method: 'PUT',
       headers: {
+        'Authorization': `Bearer ${authState.token}`,
         'Content-Type': 'application/json',
-        'token': authState.token,
       },
-      body: JSON.stringify({ notificationsEnabled }),
+      body: JSON.stringify({ notification_preference: notificationsEnabled ? 1 : 0 }),
     })
       .then(response => {
         if (response.ok) {
@@ -59,21 +60,26 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Fetch and populate the user's transaction history
-  fetch(`${config.apiBaseUrl}/receipts?user_id=${authState.user_id}`, {
+  fetch(`${config.apiBaseUrl}/receipts`, {
     method: 'GET',
-    headers: { 'token': authState.token },
+    headers: {
+      'token': authState.token,
+    },
   })
     .then(response => {
       if (!response.ok) throw new Error('Failed to fetch transaction history.');
       return response.json();
     })
     .then(data => {
-      if (data.length === 0) {
+      // Filter transactions for the current user
+      const userReceipts = data.filter(receipt => receipt.user_id === authState.user_id);
+
+      if (userReceipts.length === 0) {
         transactionTableBody.innerHTML = '<tr><td colspan="4">No transactions found.</td></tr>';
         return;
       }
 
-      data.forEach(transaction => {
+      userReceipts.forEach(transaction => {
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${transaction.id}</td>
