@@ -11,8 +11,6 @@ services:
       dockerfile: dockerfile
   
   
-    networks:
-      - bwdev
     ports:
       - 8000:8000
     labels:
@@ -29,6 +27,3 @@ services:
         traefik.http.services.analyse-proj.loadbalancer.server.port: 8000
         traefik.http.services.analyse-proj.loadbalancer.server.scheme: "http"
 
-networks:
-  bwdev:
-    external: true

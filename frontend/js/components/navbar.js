@@ -28,7 +28,8 @@ export function loadNavbar() {
   if (logoutButton) {
     logoutButton.addEventListener('click', () => {
       localStorage.removeItem('authState');
-      window.location.reload();
+      //redirect to login
+      window.location.href = '/login'
     });
   }
 }

@@ -7,27 +7,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const entityGrid = document.getElementById('entityGrid');
   const categoryFilter = document.getElementById('categoryFilter');
   const authState = JSON.parse(localStorage.getItem('authState'));
-  
-  //log authState
+
+  // Log authState for debugging
   console.log('Auth state:', authState);
 
   // Check if the user is logged in
-  /*
-  f (!authState || !authState.isLoggedIn || !authState.token) {
+  if (!authState || !authState.isLoggedIn || !authState.token) {
     alert('Your session has expired. Please log in again.');
     window.location.href = 'login.html';
     return;
   }
-  */
+
   const token = authState.token; // Use token from authState
+  let allEntities = []; // Store all entities fetched from the API
 
-  // Fetch and display all rentable entities
-  function fetchEntities(filterCategory = 'all') {
-    const url =
-      filterCategory === 'all'
-        ? `${config.apiBaseUrl}${config.endpoints.rentableEntities}`
-        : `${config.apiBaseUrl}${config.endpoints.rentableEntities}?category=${filterCategory}`;
+  /**
+   * Fetch all entities initially and store them in memory.
+   */
+  function fetchEntities() {
+    const url = `${config.apiBaseUrl}${config.endpoints.rentableEntities}`;
 
+    // Show loading indicator
     entityGrid.innerHTML = '<p>Loading entities...</p>';
 
     fetch(url, {
@@ -35,31 +35,46 @@ document.addEventListener('DOMContentLoaded', () => {
         'token': token,
       },
     })
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
           throw new Error('Failed to fetch entities.');
         }
         return response.json();
       })
-      .then(data => {
-        renderEntities(data);
+      .then((data) => {
+        allEntities = data; // Store fetched entities
+        renderEntities(allEntities); // Render all entities initially
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error fetching entities:', error);
         entityGrid.innerHTML = '<p>Error loading entities. Please try again later.</p>';
       });
   }
 
-  // Render entities in the grid
-  function renderEntities(entities) {
+  /**
+   * Render entities in the grid, filtered by category if provided.
+   * @param {Array} entities - The list of entities to display.
+   * @param {string} filterCategory - The category to filter by. Defaults to 'all'.
+   */
+  function renderEntities(entities, filterCategory = 'all') {
     entityGrid.innerHTML = '';
 
-    if (entities.length === 0) {
+    // Apply the filter if it's not 'all'
+    const filteredEntities =
+      filterCategory.toLowerCase() === 'all'
+        ? entities
+        : entities.filter((entity) =>
+            entity.category.toLowerCase() === filterCategory.toLowerCase()
+          );
+
+    // Check if there are no results
+    if (filteredEntities.length === 0) {
       entityGrid.innerHTML = '<p>No entities available for this category.</p>';
       return;
     }
 
-    entities.forEach(entity => {
+    // Render the filtered entities
+    filteredEntities.forEach((entity) => {
       const card = document.createElement('div');
       card.className = 'entity-card';
       card.innerHTML = `
@@ -75,20 +90,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Add event listeners for "Rent" buttons
-    document.querySelectorAll('.rent').forEach(button => {
-      button.addEventListener('click', event => {
+    document.querySelectorAll('.rent').forEach((button) => {
+      button.addEventListener('click', (event) => {
         const entityId = event.target.closest('button').dataset.id;
         rentEntity(entityId);
       });
     });
   }
 
-  // Rent an entity
+  /**
+   * Handle the renting of an entity.
+   * @param {string} entityId - The ID of the entity to rent.
+   */
   function rentEntity(entityId) {
     const rentalData = {
       entity_id: entityId,
       user_id: authState.user_id,
-      rental_date: new Date().toISOString().split('T')[0],
+      rental_date: new Date().toISOString().split('T')[0], // Current date
     };
 
     fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}`, {
@@ -99,25 +117,28 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       body: JSON.stringify(rentalData),
     })
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
-          return response.json().then(error => {
+          return response.json().then((error) => {
             throw new Error(error.message || 'Failed to rent entity.');
           });
         }
         alert('Rental successful!');
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error renting entity:', error);
         alert('An error occurred while renting the entity. Please try again.');
       });
   }
 
-  // Add filter change listener
-  categoryFilter.addEventListener('change', event => {
-    fetchEntities(event.target.value);
+  /**
+   * Handle the filtering logic when the category changes.
+   */
+  categoryFilter.addEventListener('change', (event) => {
+    const selectedCategory = event.target.value;
+    renderEntities(allEntities, selectedCategory); // Filter entities in the frontend
   });
 
-  // Initial fetch of all entities
+  // Fetch all entities on initial load
   fetchEntities();
 });
