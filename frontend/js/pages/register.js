@@ -1,3 +1,5 @@
+import config from '../config.js';
+
 document.addEventListener('DOMContentLoaded', () => {
   const registerForm = document.getElementById('registerForm');
   const errorMessage = document.getElementById('errorMessage');

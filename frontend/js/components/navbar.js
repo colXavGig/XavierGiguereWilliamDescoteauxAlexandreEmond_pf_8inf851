@@ -8,6 +8,8 @@ export function loadNavbar() {
       <a href="index.html"><i class="fas fa-home"></i> Home</a>
       ${authState.isLoggedIn ? `
         <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+        <a href="checkout.html"><i class="fas fa-shopping-cart"></i> Checkout</a>
+
         ${authState.role === 'clerk' || authState.role === 'admin' ? `
           <a href="clerk_dashboard.html"><i class="fas fa-tools"></i> Dashboard</a>
         ` : ''}

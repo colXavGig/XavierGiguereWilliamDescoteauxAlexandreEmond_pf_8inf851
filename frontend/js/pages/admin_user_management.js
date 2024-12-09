@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openEditUserModal(userId) {
     editingUserId = userId;
 
-    fetch(`${config.apiBaseUrl}${config.endpoints.users}/${userId}`, {
+    fetch(`${config.apiBaseUrl}${config.endpoints.users}/update/${userId}`, {
       headers: {
         'token': authState.token,
       },
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    fetch(`${config.apiBaseUrl}${config.endpoints.users}/${userId}`, {
+    fetch(`${config.apiBaseUrl}${config.endpoints.users}/delete/${userId}`, {
       method: 'DELETE',
       headers: {
         'token': authState.token,

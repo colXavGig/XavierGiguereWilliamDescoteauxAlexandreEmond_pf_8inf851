@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Function to update receipt status
   function updateReceiptStatus(receiptId, status) {
-    fetch(`${config.apiBaseUrl}${config.endpoints.receipts}/${receiptId}`, {
+    fetch(`${config.apiBaseUrl}${config.endpoints.receipts}/update/${receiptId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

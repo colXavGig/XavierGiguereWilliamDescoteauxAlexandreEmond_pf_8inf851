@@ -104,12 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function rentEntity(entityId) {
     const rentalData = {
-      entity_id: entityId,
+      entity_id: parseInt(entityId),
       user_id: authState.user_id,
       rental_date: new Date().toISOString().split('T')[0], // Current date
     };
 
-    fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}`, {
+    fetch(`${config.apiBaseUrl}${config.endpoints.rentalLogs}/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

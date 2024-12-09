@@ -37,10 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
   notificationToggle.addEventListener('change', () => {
     const notificationsEnabled = notificationToggle.checked;
 
-    fetch(`${config.apiBaseUrl}/users/${authState.user_id}`, {
+    fetch(`${config.apiBaseUrl}/users/update/${authState.user_id}`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${authState.token}`,
+        'token': authState.token,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ notification_preference: notificationsEnabled ? 1 : 0 }),
