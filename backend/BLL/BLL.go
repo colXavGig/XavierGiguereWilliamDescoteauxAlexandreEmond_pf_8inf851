@@ -71,6 +71,7 @@ func (m *mux) setRoutes() {
 
 	// User Endpoints
 	m.HandleFunc("GET "+api_basePath+"/users", m.getAllUsers())               //--->works
+	m.HandleFunc("GET "+api_basePath+"/users/{id}", m.findoneUser())          //--->works
 	m.HandleFunc("POST "+api_basePath+"/users/create", m.CreateUser())        //--->works
 	m.HandleFunc("PUT "+api_basePath+"/users/update/{id}", m.ModifyUser())    // "/users/update/:id"    --->work
 	m.HandleFunc("DELETE "+api_basePath+"/users/delete/{id}", m.DeleteUser()) // "/users/delete/:id"    --->work
@@ -82,9 +83,9 @@ func (m *mux) setRoutes() {
 	// m.HandleFunc("/entities/delete/{id}", deleteEntity) // "/entities/delete/:id"
 
 	// Rental Log Endpoints
-	m.HandleFunc("GET "+api_basePath+"/rental-logs", m.getallRentalLogs()) //------> works
-	m.HandleFunc("POST "+api_basePath+"/rental-logs/create", m.createRentalLog())
-	m.HandleFunc("DELETE "+api_basePath+"/rental-logs/delete/{id}", m.deleteRentalLog()) // "/rental-logs/delete/:id"
+	m.HandleFunc("GET "+api_basePath+"/rental-logs", m.getallRentalLogs())               //------> works
+	m.HandleFunc("POST "+api_basePath+"/rental-logs/create", m.createRentalLog())        //----> works
+	m.HandleFunc("DELETE "+api_basePath+"/rental-logs/delete/{id}", m.deleteRentalLog()) // "/rental-logs/delete/:id"   //---->works
 
 	// m.HandleFunc("GET /", m.redirectToDashboard(ui_basePath))
 
@@ -305,6 +306,44 @@ func (m *mux) ModifyUser() http.HandlerFunc {
 		}
 
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	}
+}
+func (m *mux) findoneUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		log.Println("GET request received for one user")
+
+		email, err := verifyToken(r.Header.Get("token"))
+		if err != nil {
+			http.Error(w, "token verification failed", http.StatusForbidden)
+			return
+		}
+		_, err = m.database.FindOneUser(email)
+		if err != nil {
+			log.Printf("Error while finding user. Error; %s", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			http.Error(w, "Could not parse id", http.StatusForbidden)
+			return
+		}
+
+		user, err := m.database.FindOneUserID(id)
+		if err != nil {
+			log.Printf("Error while fetching user with id: %d. Error: %s", id, err.Error())
+			http.Error(w, "error while fetching user with id: %d", id)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(user); err != nil {
+			log.Printf("Error while encoding User with id: %d. Error: %s", id, err.Error())
+			http.Error(w, "error while encoding user with id: "+strconv.Itoa(id), http.StatusInternalServerError) //Itoa is the same as FormatInt(int64(i), 10)
+			return
+		}
 	}
 }
 

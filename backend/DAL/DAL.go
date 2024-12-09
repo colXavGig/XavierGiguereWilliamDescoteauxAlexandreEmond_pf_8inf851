@@ -59,7 +59,7 @@ func (this *OracleDB) FetchAllReceipt() ([]Receipt, error) {
 	}
 	defer rows.Close() // close the connections to the rows (to the transactions) before leaving this scope
 
-	recette_list = []Receipt{}// initialise the list with a slice of capacity=5
+	recette_list = []Receipt{} // initialise the list with a slice of capacity=5
 
 	for rows.Next() { // if there is a next, continue to iterate
 		recette := Receipt{} // init an Empty Receipt
@@ -77,10 +77,10 @@ func (this *OracleDB) FetchAllReceipt() ([]Receipt, error) {
 }
 
 func (this *OracleDB) CreateReceipt(recette Receipt) error {
-	_, err := this.Exec("Insert into Receipts(user_id, total_amount, status) values(:1,:2,:3)", 
+	_, err := this.Exec("Insert into Receipts(user_id, total_amount, status) values(:1,:2,:3)",
 		recette.UserID,
 		recette.TotalAmount,
-		recette.Status,)
+		recette.Status)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (this *OracleDB) FetchallUser() ([]User, error) {
 
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&user.ID, &user.Email, &user.Role, &user.Password, &user.NotificationPreference)
+		err = rows.Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.NotificationPreference)
 		if err != nil {
 			return nil, err
 		}
