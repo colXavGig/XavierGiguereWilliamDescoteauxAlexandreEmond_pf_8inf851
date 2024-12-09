@@ -6,7 +6,6 @@ package DAL
 
 import (
 	"database/sql"
-	"errors"
 	"log"
 
 	_ "github.com/godror/godror"
@@ -86,19 +85,23 @@ func (this *OracleDB) CreateReceipt(recette Receipt) error {
 	}
 
 	for _, item := range recette.LineItems {
-		if err := this.AssociateLineItems(item); err != nil {
+		if err := this.AssociateLineItems(recette.ID, item); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (db *OracleDB) AssociateLineItems(lineItems LineItem) error {
-	// TODO:
-	// TODO: implement see Receipt_Line_Items table
-	// TODO:
+func (this *OracleDB) AssociateLineItems(receiptID int, lineItems LineItem) error {
+	query := `Insert INTO Receipt_LineItems
+				(receipt_id,entity_id, price)
+			  VALUES
+			  	(:1,:2,:3)`
 
-	return errors.New("Association line items func not implemented") // NOTE: delete line once implemented
+	if _, err := this.Exec(query, receiptID, lineItems.EntityID, lineItems.Price); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (this *OracleDB) DeleteReceipt(recette Receipt) error {
@@ -112,12 +115,12 @@ func (this *OracleDB) DeleteReceipt(recette Receipt) error {
 }
 
 func (this *OracleDB) ModifyReceipt(recette Receipt) error {
-	_, err := this.Exec("UPDATE Receipts SET(TotalAmount, Status, CreatedAt, ApprovedAt) Where(ID=:1)", recette.TotalAmount,
-		recette.Status,
-		recette.CreatedAt,
-		recette.ApprovedAt,
-		recette.ID)
+	stmt, err := this.Prepare("UPDATE Receipts SET TotalAmount=:1, Status=:2, CreatedAt=:3, ApprovedAt=:4 Where id=:4")
 	if err != nil {
+		return err
+	}
+
+	if _, err := stmt.Exec(recette.TotalAmount, recette.Status, recette.CreatedAt, recette.ApprovedAt, recette.ID); err != nil {
 		return err
 	}
 	return nil
