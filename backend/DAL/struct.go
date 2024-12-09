@@ -45,12 +45,12 @@ type RentalLog struct {
 }
 
 type Receipt struct {
-	ID          int     `json:"id"`
-	UserID      int     `json:"user_id"`
-	TotalAmount float64 `json:"total_amount"`
-	Status      string  `json:"status,omitempty"` // "pending", "approved", "rejected"
-	CreatedAt   string  `json:"created_at"`
-	ApprovedAt  string  `json:"approved_at,omitempty"` // FIXME: not in table? 
+	ID          int        `json:"id"`
+	UserID      int        `json:"user_id"`
+	TotalAmount float64    `json:"total_amount"`
+	Status      string     `json:"status,omitempty"` // "pending", "approved", "rejected"
+	CreatedAt   string     `json:"created_at"`
+	ApprovedAt  string     `json:"approved_at,omitempty"` // FIXME: not in table?
 	LineItems   []LineItem `json:"line_items"`
 }
 
