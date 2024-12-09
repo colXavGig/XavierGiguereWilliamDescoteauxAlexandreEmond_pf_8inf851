@@ -7,14 +7,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const entityGrid = document.getElementById('entityGrid');
   const categoryFilter = document.getElementById('categoryFilter');
   const authState = JSON.parse(localStorage.getItem('authState'));
+  
+  //log authState
+  console.log('Auth state:', authState);
 
   // Check if the user is logged in
-  if (!authState || !authState.isLoggedIn || !authState.token) {
+  /*
+  f (!authState || !authState.isLoggedIn || !authState.token) {
     alert('Your session has expired. Please log in again.');
     window.location.href = 'login.html';
     return;
   }
-
+  */
   const token = authState.token; // Use token from authState
 
   // Fetch and display all rentable entities
