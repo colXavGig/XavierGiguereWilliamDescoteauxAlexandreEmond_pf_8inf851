@@ -6,16 +6,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const entityGrid = document.getElementById('entityGrid');
   const categoryFilter = document.getElementById('categoryFilter');
-  const token = localStorage.getItem('token');
+  const authState = JSON.parse(localStorage.getItem('authState'));
+
+  // Check if the user is logged in
+  if (!authState || !authState.isLoggedIn || !authState.token) {
+    alert('Your session has expired. Please log in again.');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const token = authState.token; // Use token from authState
 
   // Fetch and display all rentable entities
   function fetchEntities(filterCategory = 'all') {
-    if (!token) {
-      alert('Your session has expired. Please log in again.');
-      window.location.href = 'login.html';
-      return;
-    }
-
     const url =
       filterCategory === 'all'
         ? `${config.apiBaseUrl}${config.endpoints.rentableEntities}`
@@ -25,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetch(url, {
       headers: {
-        'token': authState.token,
+        'token': token,
       },
     })
       .then(response => {
@@ -78,19 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Rent an entity
   function rentEntity(entityId) {
-    if (!token) {
-      alert('You must be logged in to rent an entity.');
-      window.location.href = 'login.html';
-      return;
-    }
-
-    const authState = JSON.parse(localStorage.getItem('authState'));
-    if (!authState || !authState.isLoggedIn) {
-      alert('You must be logged in to rent an entity.');
-      window.location.href = 'login.html';
-      return;
-    }
-
     const rentalData = {
       entity_id: entityId,
       user_id: authState.user_id,
@@ -101,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'token': authState.token,
+        'token': token,
       },
       body: JSON.stringify(rentalData),
     })

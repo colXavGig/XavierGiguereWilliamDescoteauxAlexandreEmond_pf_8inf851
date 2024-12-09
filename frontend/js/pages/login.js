@@ -45,9 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Save authentication state in localStorage
         const authState = {
           isLoggedIn: true,
-          role: data.user_role, // Assuming the backend sends the user role
+          role: data.user_role, 
           token: data.token,
-          user_id: data.user_id, // Assuming the backend sends the user ID
+          user_id: data.user_id, 
         };
         localStorage.setItem('authState', JSON.stringify(authState));
         console.log('Auth state saved:', authState);
