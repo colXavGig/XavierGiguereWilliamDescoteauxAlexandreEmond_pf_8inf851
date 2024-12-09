@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNavbar();
 
   const authState = JSON.parse(localStorage.getItem('authState'));
-  if (!authState || !authState.isLoggedIn || authState.role !== 'clerk') {
+  if (!authState || !authState.isLoggedIn || authState.role !== 'clerk' || authState.role !== 'admin') {
     alert('Unauthorized access. Redirecting to login.');
     window.location.href = 'login.html';
     return;
